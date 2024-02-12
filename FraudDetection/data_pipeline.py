@@ -31,11 +31,18 @@ class ETL_Pipeline:
         Returns:
         None
         """
-        # Assuming the data has columns 'A', 'B', and 'C'
-        # Cleaning and processing steps can be added here
-        self.data['A'] = self.data['A'].fillna(0)
-        self.data['B'] = self.data['B'].apply(lambda x: x.lower())
-        self.data['C'] = self.data['C'].apply(lambda x: x.upper())
+        # Add your data cleaning and processing code here
+        # For example, you might want to remove unnecessary columns, handle missing values,
+        # convert data types, etc.
+
+        # Here's an example of removing unnecessary columns:
+        self.data.drop(columns=['unnecessary_column_1', 'unnecessary_column_2'], inplace=True)
+
+        # Here's an example of handling missing values:
+        self.data.fillna(value='missing', inplace=True)
+
+        # Here's an example of converting data types:
+        self.data['date_column'] = pd.to_datetime(data['date_column'])
 
     def load(self, output_filename):
         """
