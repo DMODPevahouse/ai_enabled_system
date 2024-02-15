@@ -1,5 +1,5 @@
 FROM python:3.9
 COPY . ./
 RUN pip3 install -r requirements.txt
-CMD ["carfactors_service.py"]
+CMD ["ml_Service_Template.py"]
 ENTRYPOINT ["python"]

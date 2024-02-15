@@ -2,26 +2,22 @@ from flask import Flask
 from flask import request
 import os
 
-from carsfactors import carsfactors
+from randomforest import randomforest
 
 app = Flask(__name__)
 
-# http://localhost:8786/infer?transmission=automatic&color=blue&odometer=12000&year=2020&bodytype=suv&price=20000
+#http://localhost:8786/infer?age=28&salary=40000
 
 @app.route('/stats', methods=['GET'])
 def getStats():
-    return str(cf.model_stats())
+    return str(rf.model_stats())
 
 @app.route('/infer', methods=['GET'])
 def getInfer():
     args = request.args
-    transmission = args.get('transmission')
-    color = args.get('color')
-    odometer = int(args.get('odometer'))
-    year = int(args.get('year'))
-    bodytype = args.get('bodytype')
-    price = int(args.get('price'))
-    return cf.model_infer(transmission, color, odometer, year, bodytype, price)
+    age = int(args.get('age'))
+    salary = int(args.get('salary'))
+    return rf.model_infer(age,salary)
 
 @app.route('/post', methods=['POST'])
 def hellopost():
@@ -35,8 +31,8 @@ def hellopost():
     return 'File Received - Thank you'
 
 if __name__ == "__main__":
-    flaskPort = 8986
-    cf = carsfactors()
+    flaskPort = 8786
+    rf = randomforest()
     print('starting server...')
     app.run(host = '0.0.0.0', port = flaskPort)
-
+    
