@@ -4,7 +4,7 @@
 * ***Part 2***: Explore a car data set and follow the suggestions in the python to build a model that predicts the amount of time that a car stays on the lot unsold.  This requires populating a python script and building a working docker image.
 
 
-# For the speed dating section, I took a look at the data and manually evaluated it, selecting some features that I predict would be useful. Then based on those features I selected a model that would perform well with those. I did not get into any code evaluation of the models, but more so speculations and predictions based on knowledge provided of the scenario and what seems to be related.
+For the speed dating section, I took a look at the data and manually evaluated it, selecting some features that I predict would be useful. Then based on those features I selected a model that would perform well with those. I did not get into any code evaluation of the models, but more so speculations and predictions based on knowledge provided of the scenario and what seems to be related.
 
 # Assignment
 
