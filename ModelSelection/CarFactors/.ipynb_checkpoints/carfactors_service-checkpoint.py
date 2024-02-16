@@ -35,7 +35,7 @@ def hellopost():
     return 'File Received - Thank you'
 
 if __name__ == "__main__":
-    flaskPort = 8986
+    flaskPort = 8787
     cf = carsfactors()
     print('starting server...')
     app.run(host = '0.0.0.0', port = flaskPort)
