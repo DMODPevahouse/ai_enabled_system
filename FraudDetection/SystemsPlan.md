@@ -41,7 +41,13 @@ Potential errors or mistakes in the ML system could include some outliers in the
 ## DEVELOPMENT
 
 * **Methodology:** Since a solution currently exists, and data is available, an agile methodology is perfect for this use case to make small, incremental changes to a new model to improve on its performance, and integrate it into the bigger system, should performance increase, quickly.
-* **High-level System Design:** The system will operate in this fashion -- Transaction -> Bank -> fraud detection model (most likely deep neural network) -> prediction -> fraud or no fraud decision -> let user know if it is fraud.
+* **High-level System Design:** The system will operate in this fashion -- Transaction -> Bank -> fraud detection model (most likely deep neural network) -> prediction -> fraud or no fraud decision -> let user know if it is fraud. The data shall be processed in an ETL pipeline that will take the transactions we have and limit it to a set of features that are beneficial to the process. So the full process will be to take in the raw data to be read in to a dataframe, process and transform the data, then load it into a new CSV to be used later. The features that will be focused on are listed below:
+*  
+* 
+* 
+* 
+* 
+* 
 * **Development Workflow:** An overall development process would go like this. Take the current data, and build a model based on the data. Test for recall and precision, iterate on performance with feature engineering or model parameters, test and repeate until performance increases, release, get new data, repeat.
 
 ## POLICY
