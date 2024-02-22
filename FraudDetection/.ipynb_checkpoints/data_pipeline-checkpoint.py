@@ -34,6 +34,8 @@ class ETL_Pipeline:
         """
 
         to_export_df = self.data.copy()
+        to_export_df = to_export_df.dropna()
+        to_export_df = to_export_df.drop_duplicates()
         to_export_df['sex'] = to_export_df['sex'].astype("category").cat.codes
         to_export_df['first'] = to_export_df['first'].astype("category").cat.codes.astype('float')
         to_export_df['last'] = to_export_df['last'].astype("category").cat.codes.astype('float')
