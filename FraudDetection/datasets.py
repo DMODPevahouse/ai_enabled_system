@@ -8,10 +8,12 @@ class Fraud_Dataset:
     def __init__(self, data: pd.DataFrame, labels: pd.Series, splits=5, shuffled: bool=False, random: int=None):
         """
         Initializes the Fraud_Dataset class with the input data and labels.
-
-        Parameters:
-        data (pandas DataFrame): The input data.
-        labels (pandas Series): The labels corresponding to the input data.
+        
+        :param data (pandas DataFrame): The input data.
+        :param labels (pandas Series): The labels corresponding to the input data.
+        :param splits: optional variable to set how many splits can happen for testing
+        :param shuffled: gives the option to shuffle the splits
+        :param random
         """
         self.labels = labels
         self.data = data
@@ -22,14 +24,12 @@ class Fraud_Dataset:
         """
         Splits a dataset into stratified train, test, and validate sets. This is configured to also be split into folds.
 
-        Parameters:
-        data (pandas DataFrame): The input data.
-        labels (pandas Series): The labels corresponding to the input data.
-        train_proportion (float): The proportion of data to allocate to the training set.
-        test_proportion (float): The proportion of data to allocate to the test set.
-        validate_proportion (float): The proportion of data to allocate to the validation set.
+        :param random_state: Capability of choosing the random state of the stratified split
+        :param train_proportion (float): The proportion of data to allocate to the training set.
+        :param test_proportion (float): The proportion of data to allocate to the test set.
+        :param validate_proportion (float): The proportion of data to allocate to the validation set.
 
-        Returns:
+        Returns: No return but places this data into the model:
         List[Tuple[pandas DataFrame, pandas Series]]: A list of tuples containing the training, test, and validation datasets and their corresponding labels.
         """
         split_data = []

@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+
 
 # this is a template to get started, will continue to flesh out. Not in a finished state whatsoever.
 class ETL_Pipeline:
@@ -65,8 +65,6 @@ class ETL_Pipeline:
         to_export_df['day_of_week'] = to_export_df['day_of_week'].astype("category").cat.codes.astype('float')
         to_export_df.drop(columns='trans_date_trans_time', inplace=True)
 
-        scaler = MinMaxScaler()
-        to_export_df = pd.DataFrame(scaler.fit_transform(to_export_df), columns=to_export_df.columns)
         self.data = to_export_df
         
 
