@@ -2,8 +2,4 @@ numpy
 scikit-learn
 pandas
 flask
-os
-csv
-shutil
-json
 typing
