@@ -62,6 +62,7 @@ class Fraud_Detector_Model:
         X_nonfold, y_nonfold = self.initiate_etl()
         split_set = self.data_fold(X_nonfold, y_nonfold)
         if cross_validate:
+            self.data = pd.read_csv("transformed_transactions.csv")
             self.cross_validation(split_set)
         else:
             self.pipeline.fit(X_nonfold, y_nonfold)
@@ -104,13 +105,14 @@ class Fraud_Detector_Model:
         data_dict = {col: info[i] for i, col in enumerate(columns)}
         
         # Convert the dictionary to a data frame
-        df = pd.DataFrame(data_dict)
+        df = pd.DataFrame(data_dict, index=[0])
         
         # Change the data types of the columns
-        df['category'] = df['category'].astype('category').astype('float64')
+        df['category'] = df['category'].astype("category").cat.codes.astype('float')
+        df['job'] = df['job'].astype("category").cat.codes.astype('float')
+        df['merchant'] = df['merchant'].astype("category").cat.codes.astype('float')
         df['sex'] = df['sex'].astype('category').cat.codes
         df['city_pop'] = df['city_pop'].astype('float64')
-        df['job'] = df['job'].astype('category').astype('float64')
         df['merch_lat'] = df['merch_lat'].astype('float64')
         df['merch_long'] = df['merch_long'].astype('float64')
         df['day_of_week'] = df['day_of_week'].astype('float64')
@@ -128,12 +130,32 @@ class Fraud_Detector_Model:
         info = self.scaler.transform(info)
         prediction = self.pipeline.predict(info)
         return prediction
+        
+    def json_predict(self, info):
+        """
+        Takes the data to be predicted on and produces a prediction. This specific function is different from the predict due to being a different format
+        :param info: data to be used to get a predicion
+        """
+        etl = ETL_Pipeline()
+        info.to_csv("predictions.csv", index=False)
+        etl.extract("predictions.csv")
+        etl.transform()
+        etl.load("transformed_predictions.csv")
+        info = pd.read_csv("transformed_predictions.csv")
+        #info = info.reset_index(drop=True)
+        info = self.scaler.transform(info)
+        prediction = self.pipeline.predict(info)
+        return prediction
 
 
     def initiate_scaler(self):
         """
         Sets up the scaler to be used in the model so that the data that will be predicted on for new data will be scaled to the same level that the model was scaled at to prevent any data skew
         """
+        temp_df = pd.DataFrame()
         self.scaler = MinMaxScaler()
-        self.data = pd.DataFrame(self.scaler.fit_transform(self.data), columns=self.data.columns)
+        temp_df["is_fraud"] = self.data["is_fraud"]
+        data_to_scale = self.data.drop('is_fraud', axis=1)
+        self.data = pd.DataFrame(self.scaler.fit_transform(data_to_scale), columns=data_to_scale.columns)
+        self.data['is_fraud'] = temp_df['is_fraud']
 

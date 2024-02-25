@@ -4,6 +4,7 @@ import os
 import shutil
 from model import Fraud_Detector_Model
 import json
+from pandas import json_normalize
 
 
 
@@ -45,8 +46,8 @@ def getInfer():
 @app.route('/predict', methods=['POST'])
 def predict():
     json_data = request.get_json()
-    data = json.loads(json_data['data'])
-    prediction = fraud_model.predict(data)
+    data = json_normalize(json_data)
+    prediction = fraud_model.json_predict(data)
     if prediction == 1:
         return "Fraud"
     else: 
@@ -79,7 +80,7 @@ def cross_validate_post():
     return "Results in results/report.csv"
 
 if __name__ == "__main__":
-    flaskPort = 8786
+    flaskPort = 8788
     fraud_model = Fraud_Detector_Model("transactions.csv")
     print("Training the model, this may take 15-30 minutes depending on data size, the server will start after")
     fraud_model.train()
