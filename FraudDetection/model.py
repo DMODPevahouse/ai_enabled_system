@@ -61,18 +61,19 @@ class Fraud_Detector_Model:
         """
         X_nonfold, y_nonfold = self.initiate_etl()
         split_set = self.data_fold(X_nonfold, y_nonfold)
-        metric_time = Metrics()
         if cross_validate:
-            self.cross_validation(split_set, metric_time)
+            self.cross_validation(split_set)
         else:
             self.pipeline.fit(X_nonfold, y_nonfold)
     
-    def cross_validation(self, split_data, metric_func):
+    def cross_validation(self, split_data):
         """
         Perform k-fold cross-validation on the dataset using the given metric function.
         :param split_data: data that is split up for kfold validation
         :param metric_func: the function that will be used to determine what metrics are going to be used
+        :return: The classification report
         """
+        metric_func = Metrics()
         for i in range(self.n_splits):
             X, y = split_data.get_training_dataset(i)
             X_test, y_test = split_data.get_testing_dataset(i)
@@ -88,18 +89,51 @@ class Fraud_Detector_Model:
         Test the model using the provided testing data and calculate the metrics.
         :param X: The feature set or independent variables.
         :param y: The target variable or dependent variable.
-        :return: The classification report and confusion matrix.
         """
         y_pred = self.pipeline.predict(X)
         metric_func.run(y, y_pred, fold, iteration)
 
+    def transform_info(self, info):
+        """
+        This functions intention is to transform the data to be predicted into the same format needed by the model based on what it was trained with. 
+        """
+        # Define the column names
+        columns = ['merchant', 'category', 'amt', 'first', 'last', 'sex', 'lat', 'long', 'city_pop', 'job', 'merch_lat', 'merch_long', 'day_of_week', 'day_of_month', 'time', 'generation']
+        
+        # Create a dictionary with the correct data types
+        data_dict = {col: info[i] for i, col in enumerate(columns)}
+        
+        # Convert the dictionary to a data frame
+        df = pd.DataFrame(data_dict)
+        
+        # Change the data types of the columns
+        df['category'] = df['category'].astype('category').astype('float64')
+        df['sex'] = df['sex'].astype('category').cat.codes
+        df['city_pop'] = df['city_pop'].astype('float64')
+        df['job'] = df['job'].astype('category').astype('float64')
+        df['merch_lat'] = df['merch_lat'].astype('float64')
+        df['merch_long'] = df['merch_long'].astype('float64')
+        df['day_of_week'] = df['day_of_week'].astype('float64')
+        df['day_of_month'] = df['day_of_month'].astype('float64')
+        df['time'] = df['time'].astype('float64')
+        df['generation'] = df['generation'].astype('float64')
+        return df
+
     def predict(self, info):
+        """
+        Takes the data to be predicted on and produces a prediction
+        :param info: data to be used to get a predicion
+        """
+        info = self.transform_info(info)
         info = self.scaler.transform(info)
         prediction = self.pipeline.predict(info)
         return prediction
 
 
     def initiate_scaler(self):
+        """
+        Sets up the scaler to be used in the model so that the data that will be predicted on for new data will be scaled to the same level that the model was scaled at to prevent any data skew
+        """
         self.scaler = MinMaxScaler()
         self.data = pd.DataFrame(self.scaler.fit_transform(self.data), columns=self.data.columns)
 

@@ -56,12 +56,22 @@ Metrics: the Metrics class is one that has a lot going on for it. The thought pr
 * The metrics that will be most useful here are specificity to figure out the ratio between how often non-fraud is called fraud and determine how the model can balance that. Next, F1-score and ROC AUC score other both useful for doing the same thing but balancing a weighted average as well as giving a good level to determine where the model is leaning in labeling TP vs TN and seeing how it can be tuned further. Recall (sensitivity) is also useful to determine if the model is correctly identifying positive instances of fraud against how often they are incorrect. 
 #
 * **High-level System Design:** The system will operate in this fashion -- Transaction -> Bank -> fraud detection model (most likely deep neural network) -> prediction -> fraud or no fraud decision -> let user know if it is fraud. The data shall be processed in an ETL pipeline that will take the transactions we have and limit it to a set of features that are beneficial to the process. So the full process will be to take in the raw data to be read in to a dataframe, process and transform the data, then load it into a new CSV to be used later. The features that will be focused on are listed below:
-*  
-* 
-* 
-* 
-* 
-* 
+* Merchant: There looks like a correlation between fraud and the merchant of transaction
+* Category: Based on the data there seemed to be clusters of information that correlated around category, amount spent, and when that differed between fraud and non fraud
+* Amt: Paired with category, there were distinct differences between fraud and nonfraud
+* First: While difficult to tell, there was a correlation between the targets of fraud and the commonality of the name
+* Last: same as first
+* Sex: This seemed to cluster with names which may be redundant but was not difficult to keep
+* Lat: Used for location as it seemed to have some manner or correlation of fraud attackes for location, and is easier to use then city, state, zip
+* Long: same as lat
+* City_pop: Population had a strange correlation with fraud count, though it could have been just more people more problems
+* Job: Strangely, those who had specific job seemed to correlate with category and amount
+* Merch_lat: the fraud transaction merchant location did matter when paired with merchent and category
+* Merch_long: same as merch_lat
+* day_of_Week: When compared, fraud and non fraud had different times of average transaction for day of week, month, and time of day
+* day_of_month: same as day_of_week
+* time: same as day_of_week
+* generation: There was a correlation between likelihood of fraud and the generation someone was born in.
 * **Development Workflow:** An overall development process would go like this. Take the current data, and build a model based on the data. Test for recall and precision, iterate on performance with feature engineering or model parameters, test and repeate until performance increases, release, get new data, repeat.
 
 ## POLICY
@@ -74,6 +84,6 @@ Metrics: the Metrics class is one that has a lot going on for it. The thought pr
 * **Continuous Deployment:** The CD/CI deployment would go like this: Collect  data -> build model -> test -> iterate model parameters and data features -> test -> release if performance increases -> monitor -> repeat
 * **Post-deployment Monitoring:** Post deployment, the model and experts should compare on how accurate the model is being, add that to the label of new data, and calculate recall and precision, making sure that the model's performance is not decreasing. O
 * **Maintenance:** Outlined slightly in the CD/CI, but take new data that is constantly being collected, have professional label the new data based on results, use the new data for the model to be trained on, train the model. 
-* **Quality Assurance:** Quality assurance with fraud detection can be difficult since often there is no way to fully declare fraud vs non-fraud, but since the company has a method of testing the current data and has some values around recall and precision, that is how quality will be tested. Making sure that the numbers for recall and precision are not decreasing, evaluating customer calls about fraud to determine how much profitability and customer satisfaction is being lost due to fraud. 
+* **Quality Assurance:** Quality assurance with fraud detection can be difficult since often there is no way to fully declare fraud vs non-fraud, but since the company has a method of testing the current data and has some values around recall and precision, that is how quality will be tested. Making sure that the numbers for recall and precision are not decreasing, evaluating customer calls about fraud to determine how much profitability and customer satisfaction is being lost due to fraud. The model was designed with modularity in mind in order to make sure that testing and improving is easy. The model is changable simply, the cross_validation is built in in case new testing is needed but not mandatory to save time for sending the model, scaler is separate to try new things. If this model started to drift adjusting and recreating is simple for future proofing.
 
 ---

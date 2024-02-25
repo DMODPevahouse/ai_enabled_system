@@ -5,6 +5,9 @@ import csv
 
 class Metrics:
     def __init__(self):
+        """
+        This class if defined to create a report based off of a list of metrics to evaluate the model
+        """
         self.y_prediction = None
         self.y_label = None
         file_path = os.path.join('results', 'report.csv')
@@ -16,16 +19,12 @@ class Metrics:
         Calculate precision score.
         """
         return precision_score(self.y_label, self.y_prediction)
-#        return precision_score(self.y_label, self.y_prediction, average='weighted')
-
 
     def recall(self):
         """
         Calculate recall score.
         """
         return recall_score(self.y_label, self.y_prediction)
-#        return recall_score(self.y_label, self.y_prediction, average='weighted')
-
 
     def sensitivity(self):
         """
@@ -45,14 +44,12 @@ class Metrics:
         """
         Calculate F1 score.
         """
-        #return f1_score(self.y_label, self.y_prediction, average='weighted')
         return f1_score(self.y_label, self.y_prediction)
 
     def roc_auc_score(self):
         """
         Calculate ROC AUC score.
         """
-        #return roc_auc_score(self.y_label, self.y_prediction, average='weighted', multi_class='ovr')
         return roc_auc_score(self.y_label, self.y_prediction)
 
     def accuracy_score(self):
@@ -64,6 +61,10 @@ class Metrics:
     def run(self, y_prediction, y_label, fold, testing):
         """
         Generate a report with metrics.
+        :param y_prediction: the predictions the model has made
+        :param y_labels: the actual labels of the data to be tested
+        :param fold: the current fold to be mentioned in the report for tracking
+        :param testing: if the data is training, testing, or validation
         """
         self.y_prediction = y_prediction
         self.y_label = y_label

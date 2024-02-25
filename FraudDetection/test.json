@@ -1,0 +1,20 @@
+{
+
+	"merchant": fraud_Lind-Buckridge,
+	"category": misc_net ,
+	"amt": 5.12,
+	"first": Tyler,
+	"last": Banks,
+	"sex": Male,
+	"lat": 55.4,
+	"long": 44.3,
+	"city_pop": 4000,
+	"job": IT Trainer,
+	"merch_lat": 33.2, 
+	"merch_long":  22.3,
+	"day_of_week": 1,
+	"day_of_month": 5,
+	"time": 12,
+	"generation": 4,
+	
+	}
