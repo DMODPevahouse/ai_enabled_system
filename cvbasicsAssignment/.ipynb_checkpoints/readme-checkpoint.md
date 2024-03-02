@@ -14,6 +14,9 @@
      - noise
    - Note the results with a degradtion point and a Graph showing the confidence results
    
+# Answer!
+For this section of the assignment, the answers are in a jupyter notebook titled ObjectDetection. The code goes through how to manipulate an image, and test an image with a built model. After that there is a section that is implemented to show how image size and noise levels affect a models performance on detecting objects. There is a heatmap that shows the confidence level as the noise level increases as well as a description of what I think is going on.
+   
 ## Steps for Part 2 - Object Detection
 1.  Generate a web interface python script that ingests a POST command of a picture Use [postman](https://www.postman.com/) to generate the post with picture of your choice.
 1.  Returns the names of the items detected and the assocated confidence (you do not have to return the marked up image)
@@ -24,3 +27,19 @@
 1.  Push notebook, python script, readme, etc to your github portfolio (since you are in the right location locally you just need to do a push at the main directory of the portfolio (after git add * and git commit -m " comment)
 1.  Push locally built and test docker image to your docker hub portfolio.  Manually add to docker readme.
 1.  Submit the two links (github Assignment5 directory and docker hub) via text submission to Canvas.
+
+
+# For ObjectDetection
+This docker image will take in a picture of the users choosing, and attempt to recognize objects in that image. That is the motivation
+#
+ run this command: 
+#
+### docker run --restart=unless-stopped -it -p 8789:8789 -v < your workspace here >:/rapids/notebooks/workspace dmodpevahouse/705.603spring24:assignment6_1
+#
+Once this is run you can now test the ObjectDetection with this post command
+#
+http://localhost:8789/detect?name=test&description=tests
+#
+In order to send a post you will need to use a utility like Postman. Set up the post to send post requests, params should be name and description, like the example above, and in order to actually send an image, the key will need to be 
+### imagefile
+After that is successful, the model will attempt to detect objects in the image with a level of confidence, as well as the location of said object in the image. 
