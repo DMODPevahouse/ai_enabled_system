@@ -1,0 +1,7 @@
+numpy
+scikit-learn
+pandas
+flask
+typing
+ffmpeg-python
+opencv-python

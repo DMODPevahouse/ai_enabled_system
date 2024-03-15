@@ -1,74 +1,106 @@
 import os
-import xml.etree.ElementTree as ET
-from tqdm import tqdm
+import cv2
+import numpy as np
+from model import ObjectDetection
+from models_nms import non_max_suppression
 
-class DataPipeline:
-    def __init__(self, pascal_voc_dir, output_dir):
-        self.pascal_voc_dir = pascal_voc_dir
-        self.output_dir = output_dir
+class LicensePlateETL:
+    def __init__(self):
+        self.none = None
+    
+    
+    def extract(self, input_url, width, height, frames_per_second):
+        """
+        Stream video from a given input URL using ffmpeg and display it with OpenCV.
 
-    def convert_pascal_to_yolo_format(self, filename):
-        tree = ET.parse(filename)
-        root = tree.getroot()
+        This function opens a video stream from the specified input URL, decodes it using
+        ffmpeg to raw video frames, and displays these frames using OpenCV. The function
+        continues streaming until the video feed ends or is manually terminated.
 
-        image_width = int(root.find('size').find('width').text)
-        image_height = int(root.find('size').find('height').text)
+        Parameters:
+        - input_url : str
+            The URL of the video stream to open. This can be any valid ffmpeg input, 
+            such as a file path, RTSP, or UDP stream URL.
+        - width : int
+            The width of the video frames to be displayed.
+        - height : int
+            The height of the video frames to be displayed.
 
-        yolo_annotations = []
+        Note:
+        - To exit the video stream display, press 'q' while the OpenCV window is focused.
 
-        for obj in root.iter('object'):
-            class_name = obj.find('name').text
-            bbox = obj.find('bndbox')
-            xmin = int(bbox.find('xmin').text)
-            ymin = int(bbox.find('ymin').text)
-            xmax = int(bbox.find('xmax').text)
-            ymax = int(bbox.find('ymax').text)
+        Take this code, and create an extract function in the ETL with it by converting it to just create images from the code instead of just showing it
+        """
+        frame_count = 0
+        images_directory = 'output'
+        if not os.path.exists(images_directory):
+            os.makedirs(images_directory)
 
-            x_center = (xmin + xmax) / 2 / image_width
-            y_center = (ymin + ymax) / 2 / image_height
-            width = (xmax - xmin) / image_width
-            height = (ymax - ymin) / image_height
+        cv2.namedWindow("Video Stream")
 
-            yolo_annotation = f'{class_name} {x_center} {y_center} {width} {height}'
-            yolo_annotations.append(yolo_annotation)
+        process1 = (
+            ffmpeg
+            .input(input_url)
+            .output('pipe:', format='rawvideo', pix_fmt='bgr24')
+            .run_async(pipe_stdout=True, pipe_stderr=True)
+        )
+        while True:
+            print("tesT")
+            in_bytes = process1.stdout.read(width * height * 3)
+            if not in_bytes:
+                break
+            print("here")
+            in_frame = np.frombuffer(in_bytes, np.uint8).reshape([height, width, 3])
+            cv2.imshow("Video Stream", in_frame)
 
-        with open(os.path.join(self.output_dir, 'yolo', os.path.splitext(os.path.basename(filename))[0] + '.txt'), 'w') as f:
-            f.write('\n'.join(yolo_annotations))
+            if frame_count % (frames_per_second) == 0:
+                cv2.imwrite(os.path.join(images_directory, f'frame_{frame_count}.png'), in_frame)
 
-    def convert_pascal_to_coco_format(self, filename):
-        tree = ET.parse(filename)
-        root = tree.getroot()
+            if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to quit
+                break
 
-        image_width = int(root.find('size').find('width').text)
-        image_height = int(root.find('size').find('height').text)
+            frame_count += 1
 
-        coco_annotations = []
+        process1.wait()
+        cv2.destroyAllWindows()
+    
 
-        for obj in root.iter('object'):
-            class_name = obj.find('name').text
-            bbox = obj.find('bndbox')
-            xmin = int(bbox.find('xmin').text)
-            ymin = int(bbox.find('ymin').text)
-            xmax = int(bbox.find('xmax').text)
-            ymax = int(bbox.find('ymax').text)
+    def transform(self, image_directory, weights, config):
+        od = ObjectDetection(weights, config)
 
-            coco_annotation = {
-                'id': int(obj.find('id').text),
-                'image_id': int(root.find('filename').text.split('.')[0]),
-                'category_id': int(obj.find('id').text),
-                'bbox': [xmin, ymin, xmax - xmin, ymax - ymin],
-                'area': (xmax - xmin) * (ymax - ymin),
-                'iscrowd': 0
-            }
-            coco_annotations.append(coco_annotation)
+        # Loop over all the images in the directory
+        for filename in os.listdir(image_directory):
+            if filename.endswith(".jpg") or filename.endswith(".jpeg") or filename.endswith(".png"):
+                # Load the image
+                image_path = os.path.join(image_directory, filename)
+                image = cv2.imread(image_path )
 
-        with open(os.path.join(self.output_dir, 'coco', os.path.splitext(os.path.basename(filename))[0] + '.json'), 'w') as f:
-            import json
-            json.dump(coco_annotations, f)
+                # Perform object detection
+                objects = od.detect(image_path)
+                box_list = []
+                confidence_list = []
+                if objects != []:
+                    for box in objects:
+                        if box != []: 
+                            box_list.append(box['box'])
+                            confidence_list.append(box['confidence'])
+                    keep = non_max_suppression(box_list, confidence_list, .5)
 
-    def convert_all_pascal_to_yolo_and_coco_format(self):
-        for filename in tqdm(os.listdir(self.pascal_voc_dir)):
-            if filename.endswith('.xml'):
-                self.convert_pascal_to_yolo_format(os.path.join(self.pascal_voc_dir, filename))
-                self.convert_pascal_to_coco_format(os.path.join(self.pascal_voc_dir, filename))
+                    # Crop the image based on the detected object's bounding box
+                    # Get the first detected object
+                    obj = objects[keep[0]]
+
+                    # Get the bounding box coordinates
+                    w, h, x, y = obj["box"]
+
+                    # Crop the image
+                    cropped_image = image[y:y+h, x:x+w]
+
+                    # Save the cropped image
+                    self.load('output', filename, cropped_image)
+                
+    
+    def load(self, image_directory, filename, cropped_image):
+        cropped_image_path = os.path.join(image_directory, f"cropped_{filename}")
+        cv2.imwrite(cropped_image_path, cropped_image)
 
