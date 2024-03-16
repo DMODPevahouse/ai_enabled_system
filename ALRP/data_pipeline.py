@@ -4,6 +4,7 @@ import numpy as np
 from model import ObjectDetection
 from models_nms import non_max_suppression
 import imutils
+import ffmpeg
 
 class LicensePlateETL:
     """
@@ -48,7 +49,7 @@ class LicensePlateETL:
             in_frame = np.frombuffer(in_bytes, np.uint8).reshape([height, width, 3])
 
             if frame_count % (frames_per_second) == 0:
-                cv2.imwrite(os.path.join(self.images_directory, f'frame_{frame_count}.jpg'), in_frame)
+                cv2.imwrite(os.path.join(self.image_directory, f'frame_{frame_count}.jpg'), in_frame)
 
 
             frame_count += 1     

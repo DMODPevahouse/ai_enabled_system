@@ -30,10 +30,13 @@ FROM python:3.11.7
 RUN apt update
 RUN apt-get update -o Acquire::Check-Valid-Urls=0
 RUN apt install -y ffmpeg
- 
+RUN apt install -y tesseract-ocr 
+COPY . ./
+
 RUN pip install ffmpeg-python opencv-python-headless opencv-python
+RUN pip3 install -r requirements.txt
  
-COPY deployment_udp_client.py .
+
  
-CMD ["deployment_udp_client.py"]
+CMD ["alrp_service.py"]
 ENTRYPOINT [ "python" ]

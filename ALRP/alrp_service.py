@@ -5,7 +5,8 @@ import shutil
 from data_pipeline import LicensePlateETL
 import json
 from pandas import json_normalize
-
+import model
+import csv
 
 
 app = Flask(__name__)
@@ -19,7 +20,7 @@ def getStats():
 
 
 @app.route('/predict_normal', methods=['GET'])
-def predict():
+def predict_normal():
     file_path = 'answers_normal.csv'
 
     # Check if the file exists
@@ -41,7 +42,7 @@ def predict():
     return "Predicted! Answers in answer_normal.csv"
 
 @app.route('/predict_tiny', methods=['GET'])
-def predict():
+def predict_tiny():
     file_path = 'answers_tiny.csv'
 
     # Check if the file exists
@@ -70,7 +71,7 @@ if __name__ == "__main__":
     in_file = 'udp://127.0.0.1:23000'  # Example UDP input URL
     width = 3840  # Example width
     height = 2160  # Example height
-    frames_per_secon = 5
+    frames_per_second = 1
     etl.extract(in_file, width, height, frames_per_second)
     print("Video recieved! Reading in video, could take up to 15 minutes, server will start after. ")
     etl = LicensePlateETL(output_directory="output_normal")
