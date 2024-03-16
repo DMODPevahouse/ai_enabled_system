@@ -1,0 +1,11 @@
+numpy
+scikit-learn
+pandas
+flask
+typing
+shutil
+imutils
+pytesseract
+PIL
+difflib
+matplotlib

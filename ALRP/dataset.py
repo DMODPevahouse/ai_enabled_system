@@ -48,7 +48,10 @@ class Object_Detection_Dataset:
         """
         if fold < 0 or fold >= self.num_folds:
             raise ValueError("fold must be between 0 and {}".format(self.num_folds))
-        train_files = self.image_files[:fold*self.images_per_fold]
+        if fold == 0:
+            train_files = self.image_files[:1*self.images_per_fold]
+        else:
+            train_files = self.image_files[:fold*self.images_per_fold]
         test_files = self.image_files[(fold*self.images_per_fold):(fold*self.images_per_fold) + self.images_per_fold]
         valid_files = self.image_files[(fold*self.images_per_fold) + self.images_per_fold:]
         return train_files, test_files, valid_files

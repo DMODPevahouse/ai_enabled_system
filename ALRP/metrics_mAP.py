@@ -85,18 +85,3 @@ def calculate_map_11_point_interpolated(precision_recall_points):
     
     return mean_average_precision
 
-
-if __name__ == "__main__":
-
-    # Example usage of calculate_map_11_point_interpolated():
-    y_true = np.array([0, 1, 1, 0, 1]) # Actual labels
-    scores = np.array([0.1, 0.4, 0.35, 0.8, 0.7]) # Predicted scores/probabilities from object detection model.
-    precision, recall, thresholds = calculate_precision_recall_curve(y_true, scores)
-    print("Precision:", precision)
-    print("Recall:", recall)
-    print("Thresholds:", thresholds)
-
-    precision_recall_points = zip(precision, recall)
-
-    map_value = calculate_map_11_point_interpolated(precision_recall_points)
-    print(f"Mean Average Precision: {map_value:.4f}")

@@ -1,5 +1,8 @@
 import cv2
 import numpy as np
+import pytesseract
+from PIL import Image
+import os
 
 class ObjectDetection:
     def __init__(self, weights, config):
@@ -21,8 +24,9 @@ class ObjectDetection:
     def detect(self, img):
         # Get the height and width of the input image
         image = cv2.imread(img)
+        image = cv2.resize(image, (620,480) )
         height, width, _ = image.shape
-
+        confThreshold = .5
         # Create a blob from the input image
         blob = cv2.dnn.blobFromImage(image, 1/255, (416, 416), (0, 0, 0), True, crop=False)
 
@@ -34,31 +38,30 @@ class ObjectDetection:
 
         # Initialize the list of detected objects
         objects = []
-
+        frameHeight = image.shape[0]
+        frameWidth = image.shape[1]
         # Loop over the output layers
         for out in outs:
-            # Loop over the detections
             for detection in out:
-                # Get the confidence of the detection
-                confidence = detection[4]
-
-                # Filter detections with confidence below a threshold
-                if confidence > 0.5:
-                    # Get the index of the class with the highest confidence
+                # if detection[4]>0.001:
+                scores = detection[5:]
+                classId = np.argmax(scores)
+                # if scores[classId]>confThreshold:
+                confidence = scores[classId]
+                if confidence > confThreshold:
                     class_id = np.argmax(detection[5:])
-
-                    # Get the name of the class
+                    center_x = int(detection[0] * frameWidth)
+                    center_y = int(detection[1] * frameHeight)
+                    width = int(detection[2] * frameWidth)
+                    height = int(detection[3] * frameHeight)
+                    left = int(center_x - width / 2)
+                    top = int(center_y - height / 2)
                     class_name = self.classes[class_id]
-
-                    # Get the coordinates of the bounding box
-                    box = detection[0:4] * np.array([width, height, width, height])
-
-                    # Append the detected object to the list
                     objects.append({
                         "class_name": class_name,
                         "image_name": img,
                         "confidence": float(confidence),
-                        "box": box.astype("int")
+                        "box": np.array([left, top, width, height])
                     })
         if objects is not None:
             return objects
@@ -71,3 +74,20 @@ class ObjectDetection:
                     })
         # Return the list of detected objects
         return objects
+    
+    
+
+def ocr_license_plate(image):
+    """
+    Extracts the license plate number using Google's Tesseract OCR.
+
+    Parameters:
+    image (PIL.Image): The cropped image.
+
+    Returns:
+    str: The extracted license plate number.
+    """
+
+    pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
+    text = pytesseract.image_to_string(image, lang='eng', config='--oem 3 --psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+    return text.strip()

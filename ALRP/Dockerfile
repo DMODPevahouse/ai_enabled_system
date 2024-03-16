@@ -32,9 +32,8 @@ RUN apt-get update -o Acquire::Check-Valid-Urls=0
 RUN apt install -y ffmpeg
  
 RUN pip install ffmpeg-python opencv-python-headless opencv-python
-RUN pip3 install -r requirements.txt
  
-COPY .
+COPY deployment_udp_client.py .
  
-CMD ["alrp_service.py"]
+CMD ["deployment_udp_client.py"]
 ENTRYPOINT [ "python" ]
