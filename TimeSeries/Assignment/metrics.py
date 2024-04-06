@@ -4,13 +4,13 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 import csv
 
 class Metrics:
-    def __init__(self):
+    def __init__(self, file_name):
         """
         This class if defined to create a report based off of a list of metrics to evaluate the model
         """
         self.y_prediction = None
         self.y_label = None
-        file_path = os.path.join('results', 'report.csv')
+        file_path = os.path.join('results', file_name)
         if os.path.exists(file_path):
             os.remove(file_path)
 

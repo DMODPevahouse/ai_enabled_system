@@ -47,8 +47,8 @@ Metrics: Since the point of the model is predicting the future, the best we can 
 
 
 ***WIP***
-* Precision Recall Curve -- this metric really determines how well the the model is performing on precision and recall, obviously you want to have the best precision and recall you can, but in some cases there needs to be a skew towards one due to the severity of false positives vs false negatives
-* Mean average precision -- 
+* Mean Squared Error -- One good metric that will be a heavy focus for testing performance will be mean squared error, to show how far away the model is, and larger values will be more punishing. This will help determine the error that the model is and exagerates more as the model is, well, more inaccurate.
+* Mean error -- Similar to MSE, just not squaring it to see what the mean error would be without squaring. 
 #
 * **High-level System Design:** The high level system design for this project is to have a set of data that the ETL will extract, transform to a few features that have the highest prediction capability, load it for the model to pull and use. Once that is finished, the model will be trained on the data that has been extracted a loaded, then it will go through testing which means that it will train, again, on a smaller subset of the data in order to predict on the data that it has not trained on. This could be a month, a year, etc. The purpose of this is to give some sort of deviation capability to see how the model will perform on unseen data. After that, training on the whole data will be needed. Once the final training has been done, the model will be set up in a docker container so that a user can use a web url connected to a specific port to pass a date. That date then be received and forecasted on the model with an explanation of the deviation previously found if possible.
 * 

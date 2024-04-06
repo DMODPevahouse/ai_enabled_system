@@ -12,6 +12,9 @@ class ETL_Pipeline:
         Initializes the ETL_Pipeline class.
         """
         self.data = None
+        self.data_daily = None
+        self.data_weekly = None
+        self.data_monthly = None
 
     def extract(self, filename):
         """
@@ -32,43 +35,11 @@ class ETL_Pipeline:
         Returns:
         None
         """
+        self.data_daily = self.day_transform()
+        #self.data_weekly = self.week_transform()
+        #self.data_monthly = self.month_transform()        
 
-        to_export_df = self.data.copy()
-        to_export_df = to_export_df.dropna()
-        to_export_df = to_export_df.drop_duplicates()
-        to_export_df['sex'] = to_export_df['sex'].astype("category").cat.codes
-        to_export_df['first'] = to_export_df['first'].astype("category").cat.codes.astype('float')
-        to_export_df['last'] = to_export_df['last'].astype("category").cat.codes.astype('float')
-        to_export_df['category'] = to_export_df['category'].astype("category").cat.codes.astype('float')
-        to_export_df['job'] = to_export_df['job'].astype("category").cat.codes.astype('float')
-        to_export_df['merchant'] = to_export_df['merchant'].astype("category").cat.codes.astype('float')
-        to_export_df['trans_date_trans_time'] = pd.to_datetime(to_export_df['trans_date_trans_time'])
-        to_export_df['day_of_week'] = to_export_df['trans_date_trans_time'].dt.day_name()
-        to_export_df['day_of_month'] = to_export_df['trans_date_trans_time'].dt.day
-        to_export_df['time'] = to_export_df['trans_date_trans_time'].dt.time
-        to_export_df.drop(columns='cc_num', inplace=True)
-        to_export_df.drop(columns='unix_time', inplace=True)
-        to_export_df.drop(columns='city', inplace=True)
-        to_export_df.drop(columns='state', inplace=True)
-        to_export_df.drop(columns='Unnamed: 0', inplace=True)
-        to_export_df.drop(columns='zip', inplace=True)
-        to_export_df.drop(columns='street', inplace=True)
-        to_export_df.drop(columns='trans_num', inplace=True)
-        
-        bins = [1883, 1901, 1928, 1946, 1965, 1981, 1997, 2013, 2024]
-
-        to_export_df['dob'] = to_export_df['dob'].str.slice(0,4).astype(int)
-        to_export_df['generation'] = pd.cut(to_export_df['dob'], bins=bins)
-        to_export_df.drop(columns='dob', inplace=True)
-        to_export_df['time'] = to_export_df['trans_date_trans_time'].apply(lambda x: to_float(x.time()))
-        to_export_df['generation'] = to_export_df['generation'].astype("category").cat.codes.astype('float')
-        to_export_df['day_of_week'] = to_export_df['day_of_week'].astype("category").cat.codes.astype('float')
-        to_export_df.drop(columns='trans_date_trans_time', inplace=True)
-
-        self.data = to_export_df
-        
-
-    def load(self, output_filename):
+    def load(self):
         """
         Saves the transformed data to a .csv file.
         
@@ -78,12 +49,45 @@ class ETL_Pipeline:
         Returns:
         None
         """
-        self.data.to_csv(output_filename, index=False)
+        self.data_daily.to_csv("daily.csv", index=True)
+        #self.data_weekly.to_csv("weekly.csv", index=True)
+        #self.data_monthly.to_csv("monthly.csv", index=True)
         
+#    def week_transform(self):
+#        self.data['trans_date'] = pd.to_datetime(self.data['trans_date'])
+#        self.data['trans_week'] = self.data['trans_date'].dt.to_period('W').dt.strftime('Week %V')
+#        self.data['transaction_count'] = self.data.groupby('trans_week').transform('size')
+#        self.data['fraud_count'] = self.data['is_fraud'].groupby(self.data['trans_week']).transform('sum')
+#        self.data['non_fraud_count'] = self.data['transaction_count'] - self.data['fraud_count']
+#        result_df = self.data[['trans_week', 'transaction_count', 'fraud_count', 'non_fraud_count']]
+#        result_df = result_df.sort_values(by='trans_week', ascending=True)
+#        result_df = result_df.set_index("trans_week")
+#        result_df = result_df.drop_duplicates()
+#        return result_df
 
-def to_float(time):
-    hours, minutes = time.hour, time.minute
-    return hours + minutes / 60
+#    def month_transform(self):
+#        self.data['transaction_month'] = self.data['trans_date'].dt.to_period('M').dt.strftime('%b %Y')
+#        self.data['transaction_count'] = self.data.groupby('transaction_month').transform('size')
+ #       self.data['fraud_count'] = self.data['is_fraud'].groupby(self.data['transaction_month']).transform('sum')
+#        self.data['non_fraud_count'] = self.data['transaction_count'] - self.data['fraud_count']
+#        result_df = self.data[['transaction_month', 'transaction_count', 'fraud_count', 'non_fraud_count']]
+#        result_df = result_df.sort_values(by='transaction_month', ascending=True).reset_index(drop=True)
+#        result_df = result_df.set_index("transaction_month")
+#        result_df = result_df.drop_duplicates()
+#        return result_df
+
+    
+    def day_transform(self):
+        self.data['trans_date'] = pd.to_datetime(self.data['trans_date']).dt.strftime('%Y-%m-%d')
+        self.data['transaction_count'] = self.data.groupby('trans_date').transform('size')
+        self.data['fraud_count'] = self.data['is_fraud'].groupby(self.data['trans_date']).transform('sum')
+        self.data['non_fraud_count'] = self.data['transaction_count'] - self.data['fraud_count']
+        result_df = self.data[['trans_date', 'transaction_count', 'fraud_count', 'non_fraud_count']]
+        result_df = result_df.sort_values(by='trans_date', ascending=True)
+        result_df = result_df.drop_duplicates()
+        result_df['trans_date'] = pd.to_datetime(result_df['trans_date']).dt.strftime('%m-%d')
+        result_df = result_df.set_index("trans_date")
+        return result_df
 
 # Example usage
 #etl_pipeline = ETL_Pipeline()

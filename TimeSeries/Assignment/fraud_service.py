@@ -19,29 +19,7 @@ def getStats():
 
 @app.route('/infer', methods=['GET'])
 def getInfer():
-    args = request.args
-    merchant = args.get('merchant')
-    category = args.get('category')
-    amt = float(args.get('amt'))
-    first = args.get('first')
-    last = args.get('last')
-    sex = args.get('sex')
-    lat = float(args.get('lat'))
-    long = float(args.get('long'))
-    city_pop = float(args.get('city_pop'))
-    job = args.get('job')
-    merch_lat = float(args.get('merch_lat'))
-    merch_long = float(args.get('merch_long'))
-    day_of_week = float(args.get('day_of_week'))
-    day_of_month = float(args.get('day_of_month'))
-    time = float(args.get('time'))
-    generation = float(args.get('generation'))
-    print([merchant, category, amt, first, last, sex, lat, long, city_pop, job, merch_lat, merch_long, day_of_week, day_of_month, time, generation])
-    prediction = fraud_model.predict([merchant, category, amt, first, last, sex, lat, long, city_pop, job, merch_lat, merch_long, day_of_week, day_of_month, time, generation])
-    if prediction == 1:
-        return "Fraud"
-    else: 
-        return "Not Fraud"
+    
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -52,20 +30,6 @@ def predict():
         return "Fraud"
     else: 
         return "Not Fraud"
-
-@app.route('/post', methods=['POST'])
-def hellopost():
-    args = request.args
-    name = args.get('name')
-    location = args.get('location')
-    print("Name: ", name, " Location: ", location)
-    new_transaction = request.files.get('transactions', '')
-    print("new transaction data: ", new_transaction.filename)
-    if not os.path.exists("transactions_backup.csv"):
-        os.rename("transactions.csv", "transactions_backup.csv")
-    new_transaction.save('/workspace/transactions.csv')
-    fraud_model.train()
-    return 'File Received - Thank you'
 
 @app.route('/backup', methods=['POST'])
 def create_backup():
