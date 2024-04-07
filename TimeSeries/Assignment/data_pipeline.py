@@ -50,31 +50,6 @@ class ETL_Pipeline:
         None
         """
         self.data_daily.to_csv("daily.csv", index=True)
-        #self.data_weekly.to_csv("weekly.csv", index=True)
-        #self.data_monthly.to_csv("monthly.csv", index=True)
-        
-#    def week_transform(self):
-#        self.data['trans_date'] = pd.to_datetime(self.data['trans_date'])
-#        self.data['trans_week'] = self.data['trans_date'].dt.to_period('W').dt.strftime('Week %V')
-#        self.data['transaction_count'] = self.data.groupby('trans_week').transform('size')
-#        self.data['fraud_count'] = self.data['is_fraud'].groupby(self.data['trans_week']).transform('sum')
-#        self.data['non_fraud_count'] = self.data['transaction_count'] - self.data['fraud_count']
-#        result_df = self.data[['trans_week', 'transaction_count', 'fraud_count', 'non_fraud_count']]
-#        result_df = result_df.sort_values(by='trans_week', ascending=True)
-#        result_df = result_df.set_index("trans_week")
-#        result_df = result_df.drop_duplicates()
-#        return result_df
-
-#    def month_transform(self):
-#        self.data['transaction_month'] = self.data['trans_date'].dt.to_period('M').dt.strftime('%b %Y')
-#        self.data['transaction_count'] = self.data.groupby('transaction_month').transform('size')
- #       self.data['fraud_count'] = self.data['is_fraud'].groupby(self.data['transaction_month']).transform('sum')
-#        self.data['non_fraud_count'] = self.data['transaction_count'] - self.data['fraud_count']
-#        result_df = self.data[['transaction_month', 'transaction_count', 'fraud_count', 'non_fraud_count']]
-#        result_df = result_df.sort_values(by='transaction_month', ascending=True).reset_index(drop=True)
-#        result_df = result_df.set_index("transaction_month")
-#        result_df = result_df.drop_duplicates()
-#        return result_df
 
     
     def day_transform(self):

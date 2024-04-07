@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 from typing import List, Tuple
 
+#unused, ended up being difficult to implement
 class TimeSeriesFraudDataset:
     def __init__(self, data: pd.DataFrame, splits=5, shuffled: bool=False, random: int=None):
         """
