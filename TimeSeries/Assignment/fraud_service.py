@@ -2,7 +2,7 @@ from flask import Flask, render_template
 from flask import request
 import os
 import shutil
-from model import Fraud_Detector_Model
+from model import Fraud_Predictor_Traditional_Model, Fraud_Predictor_Deep_Model
 import json
 from pandas import json_normalize
 
@@ -15,39 +15,29 @@ app = Flask(__name__)
 
 @app.route('/stats', methods=['GET'])
 def getStats():
-    return "run /crossvalidate, then the results will be in results/report.csv"
+    return "Results in results/deep_report.csv and results/trad_report.csv"
 
 @app.route('/infer', methods=['GET'])
 def getInfer():
-    
+    args = request.args
+    date = args.get('mm-dd')
+    answer_count_deep, answer_fraud_deep = deep.predict(date)
+    answer_count_trad, answer_fraud_trad = trad.predict(date)
+    return f'The deep model reported: total={answer_count_deep} and fraud={answer_fraud_deep}, The traditional model reported: total={answer_count_trad} and fraud={answer_fraud_trad}'
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    json_data = request.get_json()
-    data = json_normalize(json_data)
-    prediction = fraud_model.json_predict(data)
-    if prediction == 1:
-        return "Fraud"
-    else: 
-        return "Not Fraud"
-
-@app.route('/backup', methods=['POST'])
-def create_backup():
-    if os.path.exists("transactions.csv") and os.path.exists("transactions_backup.csv"):
-            os.remove("transactions.csv")
-    shutil.copy2("transactions_backup.csv", "transactions.csv")
-    return "backup created"
-
-@app.route('/crossvalidate', methods=['GET'])
-def cross_validate_post():
-    fraud_model.train(True)
-    return "Results in results/report.csv"
+@app.route('/test', methods=['GET'])
+def test():
+    deep.train(True)
+    trad.train(True)
+    return "Results in results/deep_report.csv and results/trad_report.csv"
 
 if __name__ == "__main__":
-    flaskPort = 8788
-    fraud_model = Fraud_Detector_Model("transactions.csv")
+    flaskPort = 8791
+    deep = Fraud_Predictor_Deep_Model("CreditCardFraudFourYears.csv")
+    trad = Fraud_Predictor_Traditional_Model("CreditCardFraudFourYears.csv")
     print("Training the model, this may take 15-30 minutes depending on data size, the server will start after")
-    fraud_model.train()
+    deep.train()
+    trad.train()
     print('starting server...')
     app.run(host = '0.0.0.0', port = flaskPort)
 

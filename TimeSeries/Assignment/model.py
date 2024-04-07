@@ -1,59 +1,52 @@
 import pandas as pd
+import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
 from sklearn.impute import SimpleImputer
 from data_pipeline import ETL_Pipeline
-from datasets import TimeSeriesFraudDataset
 from metrics import Metrics
 from sklearn.preprocessing import MinMaxScaler
 from keras.preprocessing.sequence import TimeseriesGenerator
 from statsmodels.tsa.statespace.sarimax import SARIMAX
-from statsmodels.graphics.tsaplots import plot_acf,plot_pacf # for determining (p,q) orders
-from statsmodels.tsa.seasonal import seasonal_decompose      # for ETS Plots
-from pmdarima import auto_arima                              # for determining ARIMA orders
-
-# Ignore harmless warnings
-import warnings
-warnings.filterwarnings("ignore")
+from statsmodels.graphics.tsaplots import plot_acf,plot_pacf 
+from statsmodels.tsa.seasonal import seasonal_decompose     
+from pmdarima import auto_arima                              
 
 class Fraud_Predictor_Deep_Model:
     """
-    Fraud Detector Model Class:
-    This class is responsible for constructing the model, handling the necessary logic to take raw input data,
-    and produce an output.
+    This class is used to create a deep learning model for predicting fraud in a given dataset.
+    It uses a Long Short-Term Memory (LSTM) network to model the time series data and predict
+    the probability of fraud in future time steps.
     """
 
     def __init__(self, data_file, n_input=365, n_features=1, model=Sequential(), n_splits=5):
         """
-        Initialize the Fraud Detector Model.
-        :param model: The model to be used for fraud detection. Default is RandomForestClassifier.
-        :param n_splits: The number of folds to split the dataset into for cross-validation. Default is 5.
+        Initializes the Fraud_Predictor_Deep_Model class with the given parameters.
+
+        Args:
+            data_file (str): The path to the input data file.
+            n_input (int): The number of time steps to use as input to the LSTM network. Default is 365.
+            n_features (int): The number of features in the input data. Default is 1.
+            model (Sequential): The LSTM model to use for predicting fraud. Default is a new Sequential model.
+            n_splits (int): The number of splits to use in cross-validation. Default is 5.
         """
         model.add(LSTM(100, activation='relu', input_shape=(n_input, n_features)))
         model.add(Dense(1))
         model.compile(optimizer='adam', loss='mse')
+        self.n_features = n_features
+        self.n_input = n_input
         self.count_model_daily = model
         self.fraud_model_daily = model
-#        self.count_model_weekly = model
-#        self.fraud_model_weekly = model
-#        self.count_model_monthly = model
-#        self.fraud_model_monthly = model
         self.n_splits = n_splits
         self.data_file = data_file
         self.data_daily = None
         self.data_daily_count = None
         self.data_daily_fraud = None
-#        self.data_weekly = None
-#        self.data_monthly = None
         self.scaler_daily_count = None
         self.scaler_daily_fraud = None
-#        self.scaler_weekly = None
-#        self.scaler_monthly = None
         self.generator_daily_count = None
         self.generator_daily_fraud = None
-#        self.generator_weekly = None
-#        self.generator_monthly = None
         self.predictions = None
         
     def initiate_etl(self):
@@ -65,77 +58,59 @@ class Fraud_Predictor_Deep_Model:
         etl.transform()
         etl.load()
         self.data_daily = pd.read_csv("daily.csv", index_col="trans_date")
-#        self.data_weekly = pd.read_csv("weekly.csv", index_col="trans_week")
-#        self.data_monthly = pd.read_csv("monthly.csv", index_col="transaction_month")
         self.initiate_scaler()
 
 
     def train(self, test=False):
         """
         Train the model using the provided training data.
-        :param cross_validate: Determines if the model will simply train the model for use or run cross validation on it
+        :param test: Determines if the model will simply train the model for use or run cross validation on it
         """
         self.initiate_etl()
         self.initiate_generator()
-#        split_set_weekly = self.data_fold(self.data_weekly)
-#        split_set_monthly = self.data_fold(self.data_monthly)
         if test:
-            self.test(self.data_daily_count)
-            self.test(self.data_daily_fraud)
-#            self.cross_validation(split_set_weekly)
-#            self.cross_validation(split_set_monthly)
+            self.test()
         else:
-            self.count_model_daily.fit_generator(self.generator_daily_count, epochs=10)
-            self.fraud_model_daily.fit_generator(self.generator_daily_fraud, epochs=10)
+            self.count_model_daily.fit_generator(self.generator_daily_count, epochs=1)
+            self.fraud_model_daily.fit_generator(self.generator_daily_fraud, epochs=1)
+            self.create_predictions()
 
-    def test(self, metric_func=Metrics()):
+    def test(self, metric_func=Metrics("deep_report")):
         """
         Test the model using the provided testing data and calculate the metrics.
-        :param X: The feature set or independent variables.
-        :param y: The target variable or dependent variable.
         """
-        y_pred = self.pipeline.predict(X)
-        metric_func.run(self.data_daily[-n_input:], self.predictions)
+        self.create_predictions()
+        metric_func.run(self.predictions, self.data_daily[-self.n_input:])
 
-    def create_predictions(self, info):
+    def create_predictions(self):
         """
-        Takes the data to be predicted on and produces a prediction
-        :param info: data to be used to get a predicion
+        Uses the trained LSTM network to predict the number of transactions and the number of fraud cases for each day
+
+        This function first initializes a list to store the predictions. It then gets the last n_input days of data from the input data and reshapes it into a batch of size (1, n_input, n_features) to use as the initial input to the LSTM network.
         """
         test_predictions = []
-        date_range = pd.date_range(start='1/1/2022', end='12/31/2022')
-        # Format the index as month-day
+        date_range = pd.date_range(start='1/1/2022', end='12/31/2022') #year is arbitraury, just looking to get 365 days
         date_range = date_range.strftime('%m-%d')
-        # Create an empty DataFrame with the date range as the index
         self.predictions = pd.DataFrame(index=date_range)
-        first_eval_batch = self.data_daily_count[-n_input:]
+        first_eval_batch = self.data_daily_count[-self.n_input:]
         current_batch = first_eval_batch.reshape((1, self.n_input, self.n_features))
-        # go beyond len(test) to go into the unknown future (no way to measure success except wait!)
-        for i in range(len(scaled_test)):
-
-            # get prediction 1 time stamp ahead ([0] is for grabbing just the number instead of [array])
+        
+        for i in range(self.n_input):
             current_pred = self.count_model_daily.predict(current_batch)[0]
-
-            # store prediction
             test_predictions.append(current_pred) 
-
-            # update batch to now include prediction and drop first value
             current_batch = np.append(current_batch[:,1:,:],[[current_pred]],axis=1)
+        
         predictions = self.scaler_daily_count.inverse_transform(test_predictions)
         predictions = np.flip(predictions)
-        self.predictions["count"] = predictions
-        first_eval_batch = self.data_daily_fraud[-n_input:]
+        self.predictions["transaction_count"] = predictions
+        first_eval_batch = self.data_daily_fraud[-self.n_input:]
         current_batch = first_eval_batch.reshape((1, self.n_input, self.n_features))
-        for i in range(len(scaled_test)):
-
-            # get prediction 1 time stamp ahead ([0] is for grabbing just the number instead of [array])
+        test_predictions = []
+        for i in range(self.n_input):
             current_pred = self.fraud_model_daily.predict(current_batch)[0]
-
-            # store prediction
             test_predictions.append(current_pred) 
-
-            # update batch to now include prediction and drop first value
             current_batch = np.append(current_batch[:,1:,:],[[current_pred]],axis=1)
+        
         predictions = self.scaler_daily_fraud.inverse_transform(test_predictions)
         predictions = np.flip(predictions)
         self.predictions["fraud_count"] = predictions
@@ -146,16 +121,12 @@ class Fraud_Predictor_Deep_Model:
         """
         self.scaler_daily_count = MinMaxScaler()
         self.scaler_daily_fraud = MinMaxScaler()
-#        self.scaler_weekly = MinMaxScaler()
-#        self.scaler_monthly = MinMaxScaler()
         temp = self.data_daily.drop(columns=["non_fraud_count", "fraud_count"])
         self.scaler_daily_count.fit(temp)
         self.data_daily_count = self.scaler_daily_count.transform(temp)
         temp = self.data_daily.drop(columns=["non_fraud_count", "transaction_count"])
         self.scaler_daily_fraud.fit(temp)
         self.data_daily_fraud =  self.scaler_daily_fraud.transform(temp)
-#        self.data_weekly = pd.DataFrame(self.scaler_monthly.fit_transform(self.data_monthly))
-#        self.data_daily = pd.DataFrame(self.scaler.fit_transform(self.data_daily))
         
     def initiate_generator(self):
         """
@@ -164,46 +135,47 @@ class Fraud_Predictor_Deep_Model:
         n_input = 365
         self.generator_daily_count = TimeseriesGenerator(self.data_daily_count, self.data_daily_count, length=n_input, batch_size=1)
         self.generator_daily_fraud = TimeseriesGenerator(self.data_daily_fraud, self.data_daily_fraud, length=n_input, batch_size=1)
-#        n_input = 26
-#        self.generator_weekly = TimeseriesGenerator(self.data_weekly, self.data_weekly, length=n_input, batch_size=1)
-#        n_input = 12
-#        self.generator_monthly = TimeseriesGenerator(self.data_monthly, self.data_monthly, length=n_input, batch_size=1)
+   
+    def predict(self, value):
+        """
+        Returns the predicted number of transactions and the predicted number of fraud cases for the given date.
+
+        This function takes a date as input and returns the predicted number of transactions and the predicted number of fraud cases for that date. The predictions are obtained from the predictions DataFrame, which was created by the create_predictions function.
+
+        Args:
+            value (str): The date for which to get the predictions. The date should be in the format 'MM-DD'.
+
+        Returns:
+            tuple: A tuple containing the predicted number of transactions and the predicted number of fraud cases for the given date.
+        """
+        pred_count = self.predictions.loc[value, 'transaction_count']
+        pred_fraud = self.predictions.loc[value, 'fraud_count']
+        return pred_count, pred_fraud
+
 
 
 class Fraud_Predictor_Traditional_Model:
     """
-    Fraud Detector Model Class:
-    This class is responsible for constructing the model, handling the necessary logic to take raw input data,
-    and produce an output.
+    This class is used to create a traditional learning model for predicting fraud in a given dataset.
+    It uses a SARIMAX to model the time series data and predict
+    the probability of fraud in future time steps.
     """
-
     def __init__(self, data_file, n_input=365, n_features=1,n_splits=5):
         """
-        Initialize the Fraud Detector Model.
-        :param model: The model to be used for fraud detection. Default is RandomForestClassifier.
-        :param n_splits: The number of folds to split the dataset into for cross-validation. Default is 5.
+        This code defines a class `Fraud_Predictor_Traditional_Model` with an initializer that takes in four parameters:
+        - `data_file`: The file containing the data for the model to train on.
+        - `n_input`: The number of time steps to use as input for the model. Default is 365.
+        - `n_features`: The number of features for each time step. Default is 1.
+        - `n_splits`: The number of splits to use for cross-validation. Default is 5.
         """
         self.count_model_daily = None
         self.fraud_model_daily = None
-#        self.count_model_weekly = model
-#        self.fraud_model_weekly = model
-#        self.count_model_monthly = model
-#        self.fraud_model_monthly = model
+        self.n_input = n_input
         self.n_splits = n_splits
         self.data_file = data_file
         self.data_daily = None
         self.data_daily_count = None
         self.data_daily_fraud = None
-#        self.data_weekly = None
-#        self.data_monthly = None
-        self.scaler_daily_count = None
-        self.scaler_daily_fraud = None
-#        self.scaler_weekly = None
-#        self.scaler_monthly = None
-        self.generator_daily_count = None
-        self.generator_daily_fraud = None
-#        self.generator_weekly = None
-#        self.generator_monthly = None
         self.predictions = None
         
     def initiate_etl(self):
@@ -215,10 +187,6 @@ class Fraud_Predictor_Traditional_Model:
         etl.transform()
         etl.load()
         self.data_daily = pd.read_csv("daily.csv", index_col="trans_date")
-#        self.data_weekly = pd.read_csv("weekly.csv", index_col="trans_week")
-#        self.data_monthly = pd.read_csv("monthly.csv", index_col="transaction_month")
-        self.initiate_scaler()
-
 
     def train(self, test=False):
         """
@@ -226,66 +194,55 @@ class Fraud_Predictor_Traditional_Model:
         :param cross_validate: Determines if the model will simply train the model for use or run cross validation on it
         """
         self.initiate_etl()
-        self.initiate_generator()
-#        split_set_weekly = self.data_fold(self.data_weekly)
-#        split_set_monthly = self.data_fold(self.data_monthly)
         if test:
             self.test()
-            self.test(self.data_daily_fraud)
-#            self.cross_validation(split_set_weekly)
-#            self.cross_validation(split_set_monthly)
         else:
-            self.count_model_daily.fit_generator(self.generator_daily_count, epochs=10)
-            self.fraud_model_daily.fit_generator(self.generator_daily_fraud, epochs=10)
-
-    def test(self, X, y, fold, iteration, metric_func=Metrics()):
+            self.create_predictions()
+            
+    def test(self, metric_func=Metrics("trad_report")):
         """
         Test the model using the provided testing data and calculate the metrics.
-        :param X: The feature set or independent variables.
-        :param y: The target variable or dependent variable.
         """
-        y_pred = self.pipeline.predict(X)
-        metric_func.run(self.data_daily[-n_input:], self.predictions)
+        self.create_predictions()
+        metric_func.run(self.predictions, self.data_daily[-self.n_input:])
 
-    def create_predictions(self, info):
-        """
-        Takes the data to be predicted on and produces a prediction
-        :param info: data to be used to get a predicion
-        """
-        test_predictions = []
-        date_range = pd.date_range(start='1/1/2022', end='12/31/2022')
-        # Format the index as month-day
+    def create_predictions(self):
+        date_range, fraud_list, count_list = pd.date_range(start='1/1/2022', end='12/31/2022'), [], []
         date_range = date_range.strftime('%m-%d')
-        # Create an empty DataFrame with the date range as the index
         self.predictions = pd.DataFrame(index=date_range)
-        first_eval_batch = self.data_daily_count[-n_input:]
-        current_batch = first_eval_batch.reshape((1, self.n_input, self.n_features))
-        # go beyond len(test) to go into the unknown future (no way to measure success except wait!)
-        for i in range(len(scaled_test)):
+        train = self.data_daily.iloc[:self.n_input]
+        test = self.data_daily.iloc[-self.n_input:]
+        self.count_model_daily = SARIMAX(train['transaction_count'],order=(0,1,0),seasonal_order=(1,0,[1,2],7),enforce_invertibility=False)
+        self.fraud_model_daily = SARIMAX(train['fraud_count'],order=(0,0,1),seasonal_order=(1,0,1,7),enforce_invertibility=False)
+        results_count = self.count_model_daily.fit()
+        results_fraud = self.fraud_model_daily.fit()
+        start=len(train)
+        end=len(train)+len(test)-1
+        predictions_count = results_count.predict(start=start, end=end, dynamic=False).rename('Predictions')
+        
+        for i in predictions_count:
+            count_list.append(i)
+        
+        predictions_fraud = results_fraud.predict(start=start, end=end, dynamic=False).rename('Predictions')
+        
+        for i in predictions_fraud:
+            fraud_list.append(i)
+        
+        self.predictions["transaction_count"] = count_list
+        self.predictions["fraud_count"] = fraud_list
+        
+    def predict(self, value):
+        """
+        Returns the predicted number of transactions and the predicted number of fraud cases for the given date.
 
-            # get prediction 1 time stamp ahead ([0] is for grabbing just the number instead of [array])
-            current_pred = self.count_model_daily.predict(current_batch)[0]
+        This function takes a date as input and returns the predicted number of transactions and the predicted number of fraud cases for that date. The predictions are obtained from the predictions DataFrame, which was created by the create_predictions function.
 
-            # store prediction
-            test_predictions.append(current_pred) 
+        Args:
+            value (str): The date for which to get the predictions. The date should be in the format 'MM-DD'.
 
-            # update batch to now include prediction and drop first value
-            current_batch = np.append(current_batch[:,1:,:],[[current_pred]],axis=1)
-        predictions = self.scaler_daily_count.inverse_transform(test_predictions)
-        predictions = np.flip(predictions)
-        self.predictions["count"] = predictions
-        first_eval_batch = self.data_daily_fraud[-n_input:]
-        current_batch = first_eval_batch.reshape((1, self.n_input, self.n_features))
-        for i in range(len(scaled_test)):
-
-            # get prediction 1 time stamp ahead ([0] is for grabbing just the number instead of [array])
-            current_pred = self.fraud_model_daily.predict(current_batch)[0]
-
-            # store prediction
-            test_predictions.append(current_pred) 
-
-            # update batch to now include prediction and drop first value
-            current_batch = np.append(current_batch[:,1:,:],[[current_pred]],axis=1)
-        predictions = self.scaler_daily_fraud.inverse_transform(test_predictions)
-        predictions = np.flip(predictions)
-        self.predictions["fraud_count"] = predictions
+        Returns:
+            tuple: A tuple containing the predicted number of transactions and the predicted number of fraud cases for the given date.
+        """
+        pred_count = self.predictions.loc[value, 'transaction_count']
+        pred_fraud = self.predictions.loc[value, 'fraud_count']
+        return pred_count, pred_fraud

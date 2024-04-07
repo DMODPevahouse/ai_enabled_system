@@ -1,6 +1,7 @@
 import os
 import numpy as np
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+from statsmodels.tools.eval_measures import rmse
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 import csv
 
 class Metrics:
@@ -10,55 +11,30 @@ class Metrics:
         """
         self.y_prediction = None
         self.y_label = None
-        file_path = os.path.join('results', file_name)
+        self.file_name = file_name
+        file_path = os.path.join('results', self.file_name)
         if os.path.exists(file_path):
             os.remove(file_path)
 
-    def precision(self):
+    def mean_squared_error(self):
         """
-        Calculate precision score.
+        Calculate MSE.
         """
-        return precision_score(self.y_label, self.y_prediction)
+        return mean_squared_error(self.y_label, self.y_prediction)
 
-    def recall(self):
+    def rmse(self):
         """
-        Calculate recall score.
+        Calculate RMSE.
         """
-        return recall_score(self.y_label, self.y_prediction)
+        return rmse(self.y_label, self.y_prediction)
 
-    def sensitivity(self):
+    def mean_absolute_error(self):
         """
-        Calculate sensitivity (recall) score.
+        Calculate MAE.
         """
-        cm = confusion_matrix(self.y_label, self.y_prediction)
-        return cm[1,1] / (cm[1,0] + cm[1,1])
+        return mean_absolute_error(self.y_label, self.y_prediction)
 
-    def specificity(self):
-        """
-        Calculate specificity score.
-        """
-        cm = confusion_matrix(self.y_label, self.y_prediction)
-        return cm[0,0] / (cm[0,0] + cm[0,1])
-
-    def f1_score(self):
-        """
-        Calculate F1 score.
-        """
-        return f1_score(self.y_label, self.y_prediction)
-
-    def roc_auc_score(self):
-        """
-        Calculate ROC AUC score.
-        """
-        return roc_auc_score(self.y_label, self.y_prediction)
-
-    def accuracy_score(self):
-        """
-        Calculate accuracy score.
-        """
-        return accuracy_score(self.y_label, self.y_prediction)
-
-    def run(self, y_prediction, y_label, fold, testing):
+    def run(self, y_prediction, y_label):
         """
         Generate a report with metrics.
         :param y_prediction: the predictions the model has made
@@ -66,18 +42,22 @@ class Metrics:
         :param fold: the current fold to be mentioned in the report for tracking
         :param testing: if the data is training, testing, or validation
         """
-        self.y_prediction = y_prediction
-        self.y_label = y_label
+        self.y_prediction = y_prediction["transaction_count"].to_numpy()
+        self.y_label = y_label["transaction_count"].to_numpy()
 
-        report = [
+        report_count = [
             ('Metric', 'Value'),
-            ('Precision', self.precision()),
-            ('Recall', self.recall()),
-            ('Sensitivity', self.sensitivity()),
-            ('Specificity', self.specificity()),
-            ('F1 Score', self.f1_score()),
-            ('ROC AUC Score', self.roc_auc_score()),
-            ('Accuracy Score', self.accuracy_score())
+            ('mean_squared_error', self.mean_squared_error()),
+            ('rmse', self.rmse()),
+            ('mean_absolute_error', self.mean_absolute_error()),
+        ]
+        self.y_prediction = y_prediction["fraud_count"].to_numpy()
+        self.y_label = y_label["fraud_count"].to_numpy()
+        report_fraud = [
+            ('Metric', 'Value'),
+            ('mean_squared_error', self.mean_squared_error()),
+            ('rmse', self.rmse()),
+            ('mean_absolute_error', self.mean_absolute_error()),
         ]
 
         # Create results directory if it doesn't exist
@@ -85,10 +65,13 @@ class Metrics:
             os.makedirs('results')
 
         # Save report to a csv file
-        with open(os.path.join('results', 'report.csv'), 'a', newline='') as f:
+        with open(os.path.join('results', self.file_name), 'a', newline='') as f:
             writer = csv.writer(f)
-            iteration = [(testing, str(fold))]
-            writer.writerows(iteration)
-            writer.writerows(report)
+            title = "count"
+            writer.writerows(title)
+            writer.writerows(report_count)
+            title = "fraud"
+            writer.writerows(title)
+            writer.writerows(report_fraud)
 
-        return report
+       
