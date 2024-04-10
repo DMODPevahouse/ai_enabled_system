@@ -1,81 +1,94 @@
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.decomposition import LatentDirichletAllocation
 import gensim
-from gensim.models import Word2Vec
 import nltk
 nltk.download('punkt')
 from nltk.tokenize import word_tokenize
+from sklearn.feature_extraction.text import CountVectorizer
 
 def preprocess(corpus):
     """
-    Preprocesses a pandas.Series() of text data into an indexed vocabulary and preprocessed tokens.
+    This function takes in a pandas.Series() of a corpus of text data as an argument.
+    This function should output an indexed vocabulary and preprocessed tokens.
 
-    Args:
-    corpus (pandas.Series()): A Series of text data.
-
-    Returns:
-    vocab (dict): A dictionary of unique words in the corpus.
-    tokens (list): A list of preprocessed tokens in the corpus.
+    Input:
+        corpus (pandas.Series): a series of text data
+    Output:
+        vocab (dict): a dictionary of indexed vocabulary
+        tokens (list): a list of preprocessed tokens
     """
-    # Initialize empty lists to store vocabulary and tokens
+    # Initialize empty lists to store tokens and vocabulary
     vocab = {}
     tokens = []
 
-    # Tokenize the text data and update the vocabulary
-    for text in corpus:
-        tokens_text = word_tokenize(text.lower())
-        tokens.extend(tokens_text)
-        for word in tokens_text:
-            if word not in vocab:
-                vocab[word] = len(vocab)
+    # Iterate over each document in the corpus
+    for i, doc in enumerate(corpus):
+        # Tokenize the document
+        tokenized_doc = word_tokenize(doc)
+
+        # Convert tokens to lowercase
+        tokenized_doc = [token.lower() for token in tokenized_doc]
+
+        # Filter out punctuation and non-alphanumeric characters
+        tokenized_doc = [token for token in tokenized_doc if token.isalnum()]
+
+        # Remove duplicate tokens from the document
+        tokenized_doc = list(set(tokenized_doc))
+
+        # Add document tokens to the tokens list
+        tokens.append(tokenized_doc)
+
+        # Update the vocabulary
+        for token in tokenized_doc:
+            if token not in vocab:
+                vocab[token] = len(vocab)
 
     return vocab, tokens
 
-def encode(corpus, encoding_method):
+def encode(preprocessed_tokens, encoding_method):
     """
-    Encodes a pandas.Series() of text data using a specified encoding method.
-
-    Args:
-    corpus (pandas.Series()): A Series of text data.
-    encoding_method (str): The encoding method to use. Can be 'bow', 'tfidf', or 'word2vec'.
-
-    Returns:
-    encoded_data (numpy.ndarray): The encoded data using the specified method.
+    This function takes in two arguments: 1) the preprocessed token outputs of the preprocess() function,
+    and 2) the desired encoding method.
+    
+    It then encodes the preprocessed tokens using the specified encoding method and returns the encoded tokens.
+    
+    The available encoding methods are 'Bag-of-Words', 'TF-IDF', and 'Word2Vec'.
     """
-    # Preprocess the corpus
-    vocab, tokens = preprocess(corpus)
+    if encoding_method == 'Bag-of-Words':
+        # Initialize a CountVectorizer model
+        vectorizer = CountVectorizer(token_pattern=r'\b\w+\b')
 
-    # Initialize the encoded data
-    encoded_data = None
+        # Join the tokens of each document into a single string
+        preprocessed_documents = [' '.join(doc_tokens) for doc_tokens in preprocessed_tokens]
 
-    # Encode the corpus using the specified method
-    if encoding_method == 'bow':
-        # Bag-of-Words encoding
-        bow_vectorizer = CountVectorizer(vocabulary=vocab)
-        bow_matrix = bow_vectorizer.fit_transform(corpus)
-        encoded_data = bow_matrix.toarray()
+        # Encode the preprocessed tokens using the vectorizer
+        encoding = vectorizer.fit_transform(preprocessed_documents)
+    elif encoding_method == 'TF-IDF':
+        # Initialize a TF-IDF vectorizer
+        vectorizer = TfidfVectorizer(token_pattern=r'\b\w+\b')
 
-    elif encoding_method == 'tfidf':
-        # TF-IDF encoding
-        tfidf_vectorizer = TfidfVectorizer(vocabulary=vocab)
-        tfidf_matrix = tfidf_vectorizer.fit_transform(corpus)
-        encoded_data = tfidf_matrix.toarray()
+        # Join the tokens of each document into a single string
+        preprocessed_documents = [' '.join(doc_tokens) for doc_tokens in preprocessed_tokens]
 
-    elif encoding_method == 'word2vec':
-        # Word2Vec encoding
-        word2vec_model = Word2Vec([word_tokenize(text.lower()) for text in corpus], size=100, window=5, min_count=1, workers=4)
-        encoded_data = []
-        for text in corpus:
-            vector = np.zeros(100)
-            words = word_tokenize(text.lower())
-            for word in words:
-                if word in word2vec_model.wv:
-                    vector += word2vec_model.wv[word]
-            if len(words) > 0:
-                vector /= len(words)
-            encoded_data.append(vector)
-        encoded_data = np.array(encoded_data)
+        # Encode the preprocessed tokens using the vectorizer
+        encoding = vectorizer.fit_transform(preprocessed_documents)
+    elif encoding_method == 'Word2Vec':
+        # Initialize a Word2Vec model
+        model = gensim.models.Word2Vec(preprocessed_tokens, min_count=1)
 
-    return encoded_data
+        # Encode the preprocessed tokens using the model
+        encoding = []
+        for doc_tokens in preprocessed_tokens:
+            doc_vec = np.zeros(model.vector_size)
+            for token in doc_tokens:
+                if token in model.wv:
+                    doc_vec += model.wv[token]
+            encoding.append(doc_vec)
+        encoding = np.array(encoding)
+    else:
+        raise ValueError("Invalid encoding method. Choose from 'Bag-of-Words', 'TF-IDF', or 'Word2Vec'.")
+
+    return encoding
