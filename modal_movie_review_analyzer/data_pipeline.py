@@ -9,6 +9,13 @@ nltk.download('punkt')
 from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import CountVectorizer
 
+
+class ETL_pipeline:
+    def __init__():
+        
+
+
+
 def preprocess(corpus):
     """
     This function takes in a pandas.Series() of a corpus of text data as an argument.
