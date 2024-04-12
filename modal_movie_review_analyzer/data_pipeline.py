@@ -10,8 +10,8 @@ from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import CountVectorizer
 
 
-class ETL_pipeline:
-    def __init__():
+#class ETL_pipeline:
+#    def __init__():
         
 
 
