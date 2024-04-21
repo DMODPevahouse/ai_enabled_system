@@ -1,14 +1,20 @@
+import re
 import pandas as pd
 import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.decomposition import LatentDirichletAllocation
-import gensim
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from scipy.sparse import csr_matrix
 import nltk
-nltk.download('punkt')
+from sklearn.feature_extraction.text import TfidfVectorizer
 from nltk.tokenize import word_tokenize
-from sklearn.feature_extraction.text import CountVectorizer
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+import spacy
+from spacy.lang.en.stop_words import STOP_WORDS
 
+nlp = spacy.load('en_core_web_sm')
 
 class ETL_Pipeline:
     """
@@ -20,6 +26,7 @@ class ETL_Pipeline:
         Initializes the ETL_Pipeline class.
         """
         self.data = None
+        self.vectorizer = None
 
     def extract(self, filename):
         """
@@ -31,9 +38,9 @@ class ETL_Pipeline:
         Returns:
         None
         """
-        self.data = pd.read_csv(filename)
+        self.data = pd.read_csv(filename, low_memory=False)
 
-    def transform(self):
+    def transform(self, prediction=False):
         """
         Transforms the extracted data by cleaning, processing, and preparing it for modeling.
         
@@ -43,37 +50,30 @@ class ETL_Pipeline:
 
         to_export_df = self.data.copy()
 
-        to_export_df.drop(columns='author', inplace=True)
-        to_export_df.drop(columns='bought_together', inplace=True)
-        to_export_df.drop(columns='store', inplace=True)
-        to_export_df.drop(columns='videos', inplace=True)
-        to_export_df.drop(columns='images_x', inplace=True)
-        to_export_df.drop(columns='price', inplace=True)
-        to_export_df.drop(columns='description', inplace=True)
-        to_export_df.drop(columns='features', inplace=True)
-        to_export_df.drop(columns='timestamp', inplace=True)
-        to_export_df.drop(columns='user_id', inplace=True)
-        to_export_df.drop(columns='asin', inplace=True)
-        to_export_df.drop(columns='parent_asin', inplace=True)
-        to_export_df.drop(columns='Unnamed: 0', inplace=True)
-        to_export_df.drop(columns='movie_title', inplace=True)
-        to_export_df.drop(columns='subtitle', inplace=True)
-        to_export_df.drop(columns='images_y', inplace=True)
-        to_export_df.drop(columns='details', inplace=True)
-        to_export_df.drop(columns='categories', inplace=True)
-        to_export_df = to_export_df.set_index('verified_purchase')
+        columns_to_drop = ['author', 'bought_together', 'store', 'videos', 'images_x', 'price',
+                   'description', 'features', 'timestamp', 'user_id', 'asin',
+                   'parent_asin', 'Unnamed: 0', 'movie_title', 'subtitle',
+                   'images_y', 'details', 'categories', 'review_title', 'verified_purchase']
+
+        for col in columns_to_drop:
+            if col in to_export_df.columns:
+                to_export_df.drop(columns=[col], inplace=True)
+
 
         # check if there are any rows with False values in the "verified_purchase" column
         if False in to_export_df.index:
             to_export_df = to_export_df.drop(False)
 
         to_export_df = to_export_df.reset_index(drop=True)
-
-
-        self.data = to_export_df
+        self.data = to_export_df.copy()
+        self.data["text"] = self.data["text"].fillna("")
+        self.preprocess_data()
+        self.encode()
+        if not prediction:
+            self.data["rating"] = to_export_df["rating"]
         
 
-    def load(self, output_filename):
+    def load(self, output_filename, create_file=False):
         """
         Saves the transformed data to a .csv file.
         
@@ -83,92 +83,48 @@ class ETL_Pipeline:
         Returns:
         None
         """
-        self.data.to_csv(output_filename, index=False)
+        if create_file:
+            #self.data.to_csv(output_filename, index=False)
+            chunk_size = 100000
+
+            # Write the DataFrame to a CSV file in chunks
+            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                self.data.to_csv(output_filename, index=False, chunksize=chunk_size)
+        
+    
+    def encode(self):
+        if self.vectorizer == None:
+            # Initialize a TfidfVectorizer object
+            self.vectorizer = TfidfVectorizer(max_features=100000, min_df=20)
+
+            # Fit and transform the text data
+            self.data = self.vectorizer.fit_transform(self.data['clean_text'])
+            self.data = pd.DataFrame.sparse.from_spmatrix(self.data, columns=self.vectorizer.get_feature_names_out())
+        else:
+            self.data = self.vectorizer.transform(self.data['clean_text'])
+            self.data = pd.DataFrame.sparse.from_spmatrix(self.data, columns=self.vectorizer.get_feature_names_out())
+            
+    def preprocess_data(self):
+        self.data['clean_text'] = preprocess(self.data['text'])
         
         
 
+# Define a function to preprocess text data
+def preprocess(data: pd.Series) -> pd.Series:
+    return data.apply(custom_preprocessing)
 
+def custom_preprocessing(text):
+    # Check for empty strings or NaN values
+    if pd.isna(text) or text == '':
+        return ''
 
-def preprocess(corpus):
-    """
-    This function takes in a pandas.Series() of a corpus of text data as an argument.
-    This function should output an indexed vocabulary and preprocessed tokens.
+    # Process text using spacy
+    doc = nlp(text)
 
-    Input:
-        corpus (pandas.Series): a series of text data
-    Output:
-        vocab (dict): a dictionary of indexed vocabulary
-        tokens (list): a list of preprocessed tokens
-    """
-    # Initialize empty lists to store tokens and vocabulary
-    vocab = {}
-    tokens = []
+    # Remove stopwords and punctuation
+    tokens = [token.lemma_.lower().strip() for token in doc if not token.is_stop and not token.is_punct]
 
-    # Iterate over each document in the corpus
-    for i, doc in enumerate(corpus):
-        # Tokenize the document
-        tokenized_doc = word_tokenize(doc)
+    # Join tokens back into a string
+    text = ' '.join(tokens)
 
-        # Convert tokens to lowercase
-        tokenized_doc = [token.lower() for token in tokenized_doc]
-
-        # Filter out punctuation and non-alphanumeric characters
-        tokenized_doc = [token for token in tokenized_doc if token.isalnum()]
-
-        # Remove duplicate tokens from the document
-        tokenized_doc = list(set(tokenized_doc))
-
-        # Add document tokens to the tokens list
-        tokens.append(tokenized_doc)
-
-        # Update the vocabulary
-        for token in tokenized_doc:
-            if token not in vocab:
-                vocab[token] = len(vocab)
-
-    return vocab, tokens
-
-def encode(preprocessed_tokens, encoding_method):
-    """
-    This function takes in two arguments: 1) the preprocessed token outputs of the preprocess() function,
-    and 2) the desired encoding method.
-    
-    It then encodes the preprocessed tokens using the specified encoding method and returns the encoded tokens.
-    
-    The available encoding methods are 'Bag-of-Words', 'TF-IDF', and 'Word2Vec'.
-    """
-    if encoding_method == 'Bag-of-Words':
-        # Initialize a CountVectorizer model
-        vectorizer = CountVectorizer(token_pattern=r'\b\w+\b')
-
-        # Join the tokens of each document into a single string
-        preprocessed_documents = [' '.join(doc_tokens) for doc_tokens in preprocessed_tokens]
-
-        # Encode the preprocessed tokens using the vectorizer
-        encoding = vectorizer.fit_transform(preprocessed_documents)
-    elif encoding_method == 'TF-IDF':
-        # Initialize a TF-IDF vectorizer
-        vectorizer = TfidfVectorizer(token_pattern=r'\b\w+\b')
-
-        # Join the tokens of each document into a single string
-        preprocessed_documents = [' '.join(doc_tokens) for doc_tokens in preprocessed_tokens]
-
-        # Encode the preprocessed tokens using the vectorizer
-        encoding = vectorizer.fit_transform(preprocessed_documents)
-    elif encoding_method == 'Word2Vec':
-        # Initialize a Word2Vec model
-        model = gensim.models.Word2Vec(preprocessed_tokens, min_count=1)
-
-        # Encode the preprocessed tokens using the model
-        encoding = []
-        for doc_tokens in preprocessed_tokens:
-            doc_vec = np.zeros(model.vector_size)
-            for token in doc_tokens:
-                if token in model.wv:
-                    doc_vec += model.wv[token]
-            encoding.append(doc_vec)
-        encoding = np.array(encoding)
-    else:
-        raise ValueError("Invalid encoding method. Choose from 'Bag-of-Words', 'TF-IDF', or 'Word2Vec'.")
-
-    return encoding
+    return text
