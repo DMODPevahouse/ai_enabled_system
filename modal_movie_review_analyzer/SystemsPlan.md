@@ -68,6 +68,8 @@ Metrics: the main metrics to be used in a model such as this which could place m
 
 * **Preprocessesing and Encoding:** For this, I decided to go with a custom preprocessing method that allowed the removal of a lot of words, punctuation, and tokens that only added complexity without giving more data. Words like the, and, is, punctuation, https, etc. This allowed a smaller dataset to be created but was still quite substantially large. For the encoding method, due to the large dataset, I went with TFIDF, which allowed me to express a lot of specific variables. This dataset had somehwere around 1 million unique words and tokens, which obviously was not going to create avery useful dataset. With TFIDF I was able to lower that down by setting a make feature count, as well as enabling a minimum amount of repition for a word to show up. Since it would be unlikely that any data would be used outside of those parameters. 
 
+* **Data Selection:** As mentioned before, the data was cut significantly already, but the only way to make sure that the model remained small enough for a container was to cut the data significantly down. performance from the modal still held up respectably, but more investigation would be needed.
+
 ## POLICY
 
 * **Human-Machine Interfaces:** Here the interaction is obviously that the end goal is for humans to interact with labels to determine the validity of the review and how it will impact their next movies. As for interacting with the model, its very possible to incoporate a system of interfacing with the model to insure that the review classifications are not getting out of hand clearly in the wrong direction of validity
@@ -77,7 +79,8 @@ Metrics: the main metrics to be used in a model such as this which could place m
 
 * **Continuous Deployment:** The CD/CI deployment would go like this: Collect  data -> build model -> test -> iterate model parameters and data features -> test -> release if performance increases -> monitor -> repeat
 * **Post-deployment Monitoring:** Post deployment, the model and experts should compare on how accurate the model is being, add that to the label of new data, and calculate recall and precision, making sure that the model's performance is not decreasing. O
-* **Maintenance:** Outlined slightly in the CD/CI, but take new data that is constantly being collected, have professional label the new data based on results, use the new data for the model to be trained on, train the model. 
+* **Maintenance:** Outlined slightly in the CD/CI, but take new data that is constantly being collected, have professional label the new data based on results, use the new data for the model to be trained on, train the model. This model will be provided by pickle, since the data required to train the model is so huge. So whenever this model needs to be rebuilt or updated, it will need to be re-pickled(?) as well.
 * **Quality Assurance:** Quality assurance here is mostly determined on making sure that there is no skew of the model in how it is giving review labels. This could include watching the culture of movie reviews as potentially one genre or a new fad in the public changes how review are done. An example would be people dramatically tearing apart their favorite movie in all its peices but wanting to give a positive review, or very short seemingly derrogative reviews that are meant to be positive, and of course, vise versa.
+* **Distribution:** This will be distributed on a docker container that will accept a json file in order to make an accurate rating. It will then return a statement to give the rating. 
 
 ---

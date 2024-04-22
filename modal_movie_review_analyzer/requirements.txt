@@ -3,7 +3,7 @@ scikit-learn
 pandas
 flask
 typing
-keras==2.12.0
-pmdarima
-statsmodels
-tensorflow
+scipy
+nltk
+spacy
+regex

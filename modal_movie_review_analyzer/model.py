@@ -110,6 +110,7 @@ class Movie_Review_Model:
         self.etl.transform(prediction=True)
         self.etl.load("transformed_predictions.csv", create_file=True)
         info = pd.read_csv("transformed_predictions.csv")
+        info.drop(columns=['rating'], inplace=True)
         #info = info.reset_index(drop=True)
         prediction = self.pipeline.predict(info)
         return prediction

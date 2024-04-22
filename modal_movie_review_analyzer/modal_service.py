@@ -8,7 +8,6 @@ from pandas import json_normalize
 import pickle
 
 
-
 app = Flask(__name__)
 
 
@@ -22,14 +21,14 @@ def getStats():
 @app.route('/test', methods=['GET'])
 def test():
     model.train(True)
-    return "Results in results/deep_report.csv and results/trad_report.csv"
+    return "Results in results/report.csv"
 
 @app.route('/predict', methods=['POST'])
 def predict():
     json_data = request.get_json()
     data = json_normalize(json_data)
-    prediction = modal_model.json_predict(data)
-    return f'The review you have left gives a rating of {prediction}'
+    prediction = model.json_predict(data)
+    return f'The review you have left gives a rating of {prediction[0]}'
 
 if __name__ == "__main__":
     flaskPort = 8792
