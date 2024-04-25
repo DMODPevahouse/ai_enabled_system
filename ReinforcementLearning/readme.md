@@ -1,26 +1,17 @@
-# Welcome to a Readme File
-## Second Welcome
-### Third Welcome
+## Assignment 10
 
-*italic*
+1. Review the 4 examples provided in this repository - Pick and Drop, Blackjack, taxi, and pole.
 
-**bold**
+2. Select one of the environments that interest you at [gymnasium](https://gymnasium.farama.org/).  There are dozens of them. Do not select one of the examples.
 
-* list 1
-* list 2
+3. Outline the goal, reward structure, balance between exploitation and exploration then Use Random, Q learning, and DQ learning approaches to solve the goal.  That is three distinct approaches.  It is possible that your selected environment will not support one of three.  If that is the case provide a clear rationale that notes your attempt and the outcome.
 
-- list 1
-- list 2
+4. Provide a random, Q, and DQ learning approach to address reaching the goal.
 
-This decribes this particular project and directory level.
+4. Do all the main work in python scripts with an associated notebook that provides documentation and a software tour of your scripts.  The documentation contains the goal, reward structure, and description (and rationale) of the key hyperparmaters used for each appoach.  The software tour provides calls and results for each key area in the code and contains the associated results in the notebook.  The last section of the notebook provides a summary of your results noting rationale for each approach's results and recommendations to further improve.
 
+3. Please avoid looking up existing solutions for there are many.  You may use them as hints if you get stuck but try your best to avoid them.  **You will learn much more.**
 
-[GitHub Readme1 Reference](https://github.com/tchapi/markdown-cheatsheet/blob/master/README.md)
+4. Make sure to address each area of the assignment rubric.  
 
-[General Readme2 Reference](https://www.mygreatlearning.com/blog/readme-file/#:~:text=When%20you%20create%20a%20repository,be%20easily%20converted%20to%20text)
-
-Bring in local graphic
-![GitHub Logo](./regan.png) 
-
-Bring in remote graphic
-![GitHub Logo](https://upload.wikimedia.org/wikipedia/commons/d/de/Amazon_icon.png) 
+NOTE:  Only a github link is required to submit your work for this assignment.  **There is no need to develop and provide a docker image.**
