@@ -30,5 +30,11 @@ That means, based on the state or environment of the user, should be able for a 
 what the best subject line for said user will be. 
 
 ### Reward
-
+Reward here can be classified based on, what the customer would like us to figure out, how to get customers that are
+emailed to respond to the email. Respond here is categorized as clicking the email within 24 hours of receiving it.
+So that means we have to reward the model based on the number of emails that it gets the user to click on within that 
+timeframe. So a new feature was made here to determine the reward, which is the combination of the Sent and recieved.
+This feature has been named one_day_response. Since we have some ground truth of the environment, we will be able to
+reward the model based on the number of emails that are clicked on within 24 hours of receiving the email based on 
+the q-learning table that is created, the models action, and the ground truth of the environment.
 
