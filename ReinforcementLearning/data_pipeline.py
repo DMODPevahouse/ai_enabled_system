@@ -5,23 +5,19 @@ import os
 class ETL_Pipeline:
     def __init__(self):
         self.data = None
-        self.sent = None
-        self.recieved = None
-        self.email_data = None
 
-    def extract(self, sent="sent_emails.csv", recieved="recieved_emails.csv", email_data="userbase.csv"):
-        self.sent = pd.read_csv(sent)
-        self.recieved = pd.read_csv(recieved)
-        self.email_data = pd.read_csv(email_data)
+    def extract(self, sent="sent_emails.csv", received="responded.csv", email_data="userbase.csv"):
+        df1, df2, df3 = pd.read_csv(sent), pd.read_csv(received), pd.read_csv(email_data)
+        merged_df = df1.merge(df2, on=['Customer_ID', 'SubjectLine_ID'])
+        merged_df = merged_df.merge(df3, on='Customer_ID')
+        self.data = merged_df
 
     def transform(self):
-        export_data = pd.concat([self.sent, self.recieved, self.email_data], axis=0)
-        export_data['one_day_response'] = export_data.apply(one_day_response, axis=1)
-
-        self.data = export_data
+        self.data['one_day_response'] = self.data.apply(one_day_response, axis=1)
+        self.data = self.data.drop(columns=['Sent_Date', 'Responded_Date', 'Customer_ID'])
 
     def load(self, path="transformed_data.csv"):
-        self.data.to_csv(path, index=False)
+        self.data.to_csv(path)
 
 
 def one_day_response(row):
