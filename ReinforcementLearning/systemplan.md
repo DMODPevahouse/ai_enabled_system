@@ -38,3 +38,67 @@ This feature has been named one_day_response. Since we have some ground truth of
 reward the model based on the number of emails that are clicked on within 24 hours of receiving the email based on 
 the q-learning table that is created, the models action, and the ground truth of the environment.
 
+
+
+Context: 
+
+I have this custom environment
+```
+import gym
+
+class CustomEnv(gym.Env):
+    def __init__(self, data):
+        self.data = data
+        self.current_state_index = 0
+
+    # Other methods will be defined here
+    def reset(self):
+        self.current_state_index = 0
+        return self.data[self.current_state_index][1:]  # Exclude the SubjectLine_ID
+    
+    def action_space(self):
+        return gym.spaces.Discrete(len(self.data))
+    
+    def reward(self, action):
+        next_state_index = self.current_state_index + 1
+        if next_state_index >= len(self.data):
+            return 0  # Terminal state
+
+        if self.data[next_state_index][-1] == 1:
+            return 1
+        else:
+            return -1
+    
+    def step(self, action):
+        assert self.action_space().contains(action), f"Action {action} not in the action space"
+
+        prev_state = self.data[self.current_state_index][1:]
+        self.current_state_index += 1
+
+        if self.current_state_index >= len(self.data):
+            next_state = None
+            done = True
+            reward = 0
+        else:
+            next_state = self.data[self.current_state_index][1:]
+            reward = self.reward(action)
+            done = False
+
+        return next_state, reward, done, {}
+```
+
+That is built on this data:
+
+```
+		SubjectLine_ID	Gender	Type	Email_Address	Age	Tenure	one_day_response
+1	0	2	M	B	Jaj2NuUJneD@gmail.com	44	12	0
+2	1	2	M	B	Jaj2NuUJneD@gmail.com	44	12	0
+3	2	3	M	C	Qtgy0C@msn.com	33	9	0
+4	3	3	M	C	Qtgy0C@msn.com	33	9	0
+5	4	2	M	C	JQVjAP2eVCnIz@hotmail.com	26	21	0
+6	5	2	M	C	JQVjAP2eVCnIz@hotmail.com	26	21	0
+7	6	2	M	C	JQVjAP2eVCnIz@hotmail.com	26	21	1
+```
+
+Can you code an example reinforcement learning model on this? 
+
