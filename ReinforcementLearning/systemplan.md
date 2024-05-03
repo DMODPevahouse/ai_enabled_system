@@ -1,5 +1,57 @@
 # System Plan for email Reinforcement Learning
 
+# <u>MOTIVATION (Why's)</u>
+
+## Why are we solving this problem?
+
+* Problem Statement: 
+    * The problem that we are solving is to determine the best subject line to send to a user based on their 
+    information. This is a problem that is faced by many companies that send out emails to their customers. 
+    The main goal is to get the user to click on the email, and respond to the email within 24 hours of receiving it. 
+    This is a problem that can be solved by reinforcement learning, since the model can take in the data of the userbase
+    is being trained on, and take in a set number of subject lines to determine which subject line would be best for
+    the user.
+
+## Value Proposition
+* **Why is Reinforcement Learning the best approach?**
+
+  Reinforcement learning is a great approach for this problem. Althought most people think of RL as being meant in a
+game environment, it can be used in a real world scenario. The environment in this case is simply the userbase that is being
+used, and the actions are simply the subject lines that are being sent to the user. More detail on this later.
+* **Is this problem suitable for Reinforcement Learning due to its data and desired outcome?**
+
+  RL is suitable for this problem since the data can be set up in a way that emulates and environment that remains consistent
+with actions that can be deterministic and lead to specific results, based on the data that is given.
+* **Can we tolerate potential errors and uncertainty in the model?**
+  We can tolerate a certain amount of errors in this model, as if the model is incorrect about what is the best email to
+send the user, the email will be simply ignored. So the errors are benign unless the model is so belligerently wrong that
+it is recommending emails that are the least likely to be clicked on.
+# <u>REQUIREMENTS (What's)</u>
+
+## SCOPE
+
+* **What are the overall goals and objectives of this project?**
+
+  The overall objective this project seeks to accomplish is to determine the best subject line of emails to send to its 
+userbase that have the highest likelihood of being responded too within 24 hours as that is most likely to be attached to
+a more involved user in whatever the email is about.
+* **How will success be measured for this project?**
+
+  Overall success for this project will be measured in the reward achieved by the model on the test emails. The higher
+the reward, the more successful the model is expected to be in a real world scenario.
+## REQUIREMENTS
+
+* **Assumptions:** 
+  
+* * **System Requirements:** This system needs to be robust enough to establish a reviews qualifications to a specific star level, however a robust model is not the only requirement. Reviews are sent in by the hundreds per minute, if not more so, which means the system has to keep performance in mind to make sure to not make the application so slow that people would not want to use it at all. A typical review is instant when the information is inserted, if this system is accurate and reliable but takes minutes upon recieving the data making it unseemly to use, that will not fly. 
+
+## RISK & UNCERTAINTIES
+
+* What are potential risks and harms associated with this project?
+The potential risks and harm of this project are fairly low. The main negative outcome that is possible would be a mislabeling of a star value. The outcome of this would mean the potential of a bad review to have a positive star rating, or a good review have a negative. Mostly this could affect the trust that people would have in this system to accurately give labels, or concern about abuse of the system. 
+* What are the potential causes of errors or mistakes in the ML system?
+Errors in this system can be caused by a multitude of reasons. Lack of data, sarcasm in reviews, over critical positive reviews, under critical negative reviews, etc. Avoiding these kinds of results may help, but they could also be common review types that a system would need to be trained on. So with the understand of the modal model, it may need to be trained on exactly this kind of data to try and pick apart the differences in this type of data. 
+
 ### State 
 The state that can be used for this problem can be attributed to the description of the details of the email. 
 For example, Gender, Type, Age, Tenure, would all be the state of the email. That would mean for the
@@ -40,65 +92,4 @@ the q-learning table that is created, the models action, and the ground truth of
 
 
 
-Context: 
-
-I have this custom environment
-```
-import gym
-
-class CustomEnv(gym.Env):
-    def __init__(self, data):
-        self.data = data
-        self.current_state_index = 0
-
-    # Other methods will be defined here
-    def reset(self):
-        self.current_state_index = 0
-        return self.data[self.current_state_index][1:]  # Exclude the SubjectLine_ID
-    
-    def action_space(self):
-        return gym.spaces.Discrete(len(self.data))
-    
-    def reward(self, action):
-        next_state_index = self.current_state_index + 1
-        if next_state_index >= len(self.data):
-            return 0  # Terminal state
-
-        if self.data[next_state_index][-1] == 1:
-            return 1
-        else:
-            return -1
-    
-    def step(self, action):
-        assert self.action_space().contains(action), f"Action {action} not in the action space"
-
-        prev_state = self.data[self.current_state_index][1:]
-        self.current_state_index += 1
-
-        if self.current_state_index >= len(self.data):
-            next_state = None
-            done = True
-            reward = 0
-        else:
-            next_state = self.data[self.current_state_index][1:]
-            reward = self.reward(action)
-            done = False
-
-        return next_state, reward, done, {}
-```
-
-That is built on this data:
-
-```
-		SubjectLine_ID	Gender	Type	Email_Address	Age	Tenure	one_day_response
-1	0	2	M	B	Jaj2NuUJneD@gmail.com	44	12	0
-2	1	2	M	B	Jaj2NuUJneD@gmail.com	44	12	0
-3	2	3	M	C	Qtgy0C@msn.com	33	9	0
-4	3	3	M	C	Qtgy0C@msn.com	33	9	0
-5	4	2	M	C	JQVjAP2eVCnIz@hotmail.com	26	21	0
-6	5	2	M	C	JQVjAP2eVCnIz@hotmail.com	26	21	0
-7	6	2	M	C	JQVjAP2eVCnIz@hotmail.com	26	21	1
-```
-
-Can you code an example reinforcement learning model on this? 
 

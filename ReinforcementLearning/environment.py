@@ -38,5 +38,7 @@ class EmailEnvironment(gym.Env):
 
         if self.data[self.current_state_index][-1] == 1:
             return 10
+        elif self.data[self.current_state_index][-2] == 1:
+            return 5
         else:
             return -10
