@@ -36,11 +36,12 @@ class ETL_Pipeline:
         """
         Transform the data by merging the three dataframes and finding matches between the dataframes
         """
-        merged_df = pd.merge(self.df1, self.df3, on='Customer_ID', how='left')
-        merged_df = find_matches(merged_df, self.df2)
-        merged_df = find_same_day_matches(merged_df, self.df2)
-        merged_df.drop(columns=['Sent_Date'], inplace=True)
-        self.data = merged_df
+        transformed_df = self.df3.copy()
+        transformed_df = self.find_matches(transformed_df)
+       # print(transformed_df)
+       #  transformed_df = self.find_same_day_matches(transformed_df)
+       # transformed_df.drop('Sent_Date', axis=1, inplace=True)
+        self.data = transformed_df
 
     def load(self, path="transformed_data.csv"):
         """
@@ -52,43 +53,59 @@ class ETL_Pipeline:
         """
         self.data.to_csv(path)
 
+    def find_matches(self, transformed_df):
+        """
+        Find matches between the two dataframes based on Customer_ID and SubjectLine_ID
 
-def find_matches(merged_df, df2):
-    """
-    Find matches between the two dataframes based on Customer_ID and SubjectLine_ID
+        Args:
+        merged_df: DataFrame, the merged dataframe that takes the sent_emails and userbase dataframes
+        df2: DataFrame, the responded dataframe
 
-    Args:
-    merged_df: DataFrame, the merged dataframe that takes the sent_emails and userbase dataframes
-    df2: DataFrame, the responded dataframe
+        """
+        transformed_df['SubjectLine_ID'] = 1
+        transformed_df['Match'] = 0
+        transformed_df['Date_Match'] = 0
+       # transformed_df['Sent_Date'] = ''
+        #transformed_df['Sent_Date'] = pd.to_datetime(transformed_df['Sent_Date'])
+        for index, row in self.df1.iterrows():
+            customer_id = row['Customer_ID']
+            subjectline_id = row['SubjectLine_ID']
+            sent_date = row['Sent_Date']
+            match = (self.df2['Customer_ID'] == customer_id) & (self.df2['SubjectLine_ID'] == subjectline_id)
+            if customer_id in transformed_df.index and match.any() and transformed_df.at[
+                customer_id, 'Date_Match'] == 0:
+                transformed_df.at[customer_id, 'Match'] = 1
+                transformed_df.at[customer_id, 'SubjectLine_ID'] = subjectline_id
+                transformed_df.at[customer_id, 'Sent_Date'] = sent_date
+                match_row = self.df2[
+                    (self.df2['Customer_ID'] == customer_id) & (self.df2['SubjectLine_ID'] == subjectline_id)]
+                responded_date = match_row['Responded_Date'].values[0]
+                if pd.to_datetime(sent_date) == pd.to_datetime(responded_date):
+                    transformed_df.at[index, 'Date_Match'] = 1
+                    transformed_df.at[index, 'SubjectLine_ID'] = subjectline_id
+        return transformed_df
 
-    """
-    merged_df['Match'] = 0
-    for index, row in merged_df.iterrows():
-        customer_id = row['Customer_ID']
-        subjectline_id = row['SubjectLine_ID']
-        match = (df2['Customer_ID'] == customer_id) & (df2['SubjectLine_ID'] == subjectline_id)
-        if match.any():
-            merged_df.at[index, 'Match'] = 1
-    return merged_df
-
-
-def find_same_day_matches(merged_df, df2):
-    """
-    Find matches between the two dataframes based on Customer_ID, SubjectLine_ID, Responded_Date, and Sent_Date
-
-    Args:
-    merged_df: DataFrame, the merged dataframe that takes the sent_emails and userbase dataframes
-    df2: DataFrame, the responded dataframe
-
-    """
-    merged_df['Date_Match'] = 0
-    for index, row in merged_df[merged_df['Match'] == 1].iterrows():
-        customer_id = row['Customer_ID']
-        subjectline_id = row['SubjectLine_ID']
-        sent_date = row['Sent_Date']
-        match_row = df2[(df2['Customer_ID'] == customer_id) & (df2['SubjectLine_ID'] == subjectline_id)]
-        responded_date = match_row['Responded_Date'].values[0]
-        if pd.to_datetime(sent_date) == pd.to_datetime(responded_date):
-            merged_df.at[index, 'Date_Match'] = 1
-
-    return merged_df
+#     def find_same_day_matches(self, transformed_df):
+#         """
+#         Find matches between the two dataframes based on Customer_ID, SubjectLine_ID, Responded_Date, and Sent_Date
+#
+#         Args:
+#         merged_df: DataFrame, the merged dataframe that takes the sent_emails and userbase dataframes
+#         df2: DataFrame, the responded dataframe
+#
+#         """
+#         transformed_df['Date_Match'] = 0
+#  #       transformed_df['Sent_Date'] = pd.to_datetime(transformed_df['Sent_Date'])
+# #        self.df2['Responded_Date'] = pd.to_datetime(self.df2['Responded_Date'])
+#
+#         # Iterate over the rows of merged_df where Match is 1
+#         for index, row in transformed_df[transformed_df['Match'] == 1].iterrows():
+#             customer_id = row['Customer_ID']
+#             subjectline_id = row['SubjectLine_ID']
+#             sent_date = row['Sent_Date']
+#             match_row = self.df2[(self.df2['Customer_ID'] == customer_id) & (self.df2['SubjectLine_ID'] == subjectline_id)]
+#             responded_date = match_row['Responded_Date'].values[0]
+#             if pd.to_datetime(sent_date) == pd.to_datetime(responded_date):
+#                 transformed_df.at[index, 'Date_Match'] = 1
+#                 transformed_df.at[index, 'SubjectLine_ID'] = subjectline_id
+#         return transformed_df
